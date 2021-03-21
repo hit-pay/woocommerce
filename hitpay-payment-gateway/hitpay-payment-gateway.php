@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 2.0
+Version: 2.1
 Requires at least: 4.0
 Tested up to: 5.6.2
 WC requires at least: 2.4
@@ -24,6 +24,7 @@ require_once HITPAY_PLUGIN_PATH . 'vendor/autoload.php';
 
 use HitPay\Client;
 use HitPay\Request\CreatePayment;
+use HitPay\Response\PaymentStatus;
 
 /**
  * Initiate HitPay Mobile Payment once plugin is ready
@@ -66,6 +67,43 @@ function woocommerce_hitpay_init() {
             add_action('woocommerce_thankyou_' . $this->id, array($this, 'thankyou_page'));
             add_action('woocommerce_api_'. strtolower("WC_HitPay"), array( $this, 'check_ipn_response' ) );
             add_filter('woocommerce_gateway_icon', array($this, 'custom_payment_gateway_icons'), 10, 2 );
+            add_action( 'woocommerce_admin_order_data_after_order_details', array( $this, 'admin_order_details'), 10, 3 );
+        }
+        
+        public function admin_order_details( $order ){
+            if ($order->get_payment_method() == $this->id) {
+                $order_id = $order->get_id();
+                $payment_method = '';
+                $payment_request_id = get_post_meta( $order_id, 'HitPay_payment_request_id', true );
+                if (!empty($payment_request_id)) {
+                    $payment_method = get_post_meta( $order_id, 'HitPay_payment_method', true );
+                    if (empty($payment_method)) {
+                        $hitpay_client = new Client(
+                            $this->api_key,
+                            $this->getMode()
+                        );
+
+                        $paymentStatus = $hitpay_client->getPaymentStatus($payment_request_id);
+                        if ($paymentStatus) {
+                            $payments = $paymentStatus->payments;
+                            if (isset($payments[0])) {
+                                $payment = $payments[0];
+                                $payment_method = $payment->payment_type;
+                                $order->add_meta_data('HitPay_payment_method', $payment_method);
+                                $order->save_meta_data();
+                            }
+                        }
+                    }
+                }
+                
+                if (!empty($payment_method)) {
+            ?>
+                    <p style="padding: 10px; font-size: 16px; color: blue; position: relative; top: 10px;">
+                    <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucfirst($payment_method)?></span>
+                    </p>
+            <?php
+                }
+            }
         }
         
         public function custom_payment_gateway_icons( $icon, $gateway_id ){
@@ -79,8 +117,10 @@ function woocommerce_hitpay_init() {
             
             if($gateway_id == 'hitpay') {
                 $icon = '';
-                foreach ($this->payments as $payment) {
-                    $icon .= ' <img src="' . HITPAY_PLUGIN_URL . 'assets/images/'.$payment.'.svg" alt="' . esc_attr( $icons[$payment] ) . '"  title="' . esc_attr( $icons[$payment] ) . '" />';
+                if ($this->payments) {
+                    foreach ($this->payments as $payment) {
+                        $icon .= ' <img src="' . HITPAY_PLUGIN_URL . 'assets/images/'.$payment.'.svg" alt="' . esc_attr( $icons[$payment] ) . '"  title="' . esc_attr( $icons[$payment] ) . '" />';
+                    }
                 }
             }
             
@@ -98,7 +138,7 @@ function woocommerce_hitpay_init() {
                 'enabled' => array(
                     'title' => __('Active', $this->domain),
                     'type' => 'checkbox',
-                    'label' => __('Enable/Disable', $this->domain),
+                    'label' => __(' ', $this->domain),
                     'default' => 'yes'
                 ),
                 'title' => array(
@@ -118,7 +158,7 @@ function woocommerce_hitpay_init() {
                 'mode' => array(
                     'title' => __('Live Mode', $this->domain),
                     'type' => 'checkbox',
-                    'label' => __('Enable/Disable', $this->domain),
+                    'label' => __(' ', $this->domain),
                     'default' => 'no'
                 ),
                 'api_key' => array(
@@ -146,7 +186,7 @@ function woocommerce_hitpay_init() {
                 'debug' => array(
                     'title' => __('Debug', $this->domain),
                     'type' => 'checkbox',
-                    'label' => __('Enable/Disable', $this->domain),
+                    'label' => __(' ', $this->domain),
                     'default' => 'no'
                 ),
             );
@@ -173,6 +213,27 @@ function woocommerce_hitpay_init() {
                 return update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ) );
             }
 	}
+        
+        function payment_fields()
+        { 
+            ?>
+            <div class="form-row form-row-wide">
+                <p><?php echo $this->description; ?></p>
+                <?php
+                   if (isset( $_REQUEST['cancelled'] ) )  {
+                ?>
+                <script>
+                    let message = '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout"><div class="woocommerce-error"><?php echo __('Payment canceled by customer', $this->domain)?></div></div>';
+                    jQuery(document).ready(function(){
+                        jQuery('.woocommerce-notices-wrapper:first').html(message);
+                    });
+                </script>
+                <?php
+                   }
+                ?>
+            </div>
+            <?php
+        }
 
         /**
          * Output for the order received page.
@@ -183,9 +244,10 @@ function woocommerce_hitpay_init() {
             $style = "width: 100%;  margin-bottom: 1rem; background: #212b5f; padding: 20px; color: #fff; font-size: 22px;";
             if (isset($_GET['status'])) {
                 $status = sanitize_text_field($_GET['status']);
-                $reference = sanitize_text_field($_GET['reference']);
 
                 if ($status == 'canceled') {
+                    $reference = sanitize_text_field($_GET['reference']);
+                    
                     $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
                     $order->update_status('cancelled', $status_message);
                     
@@ -316,7 +378,7 @@ function woocommerce_hitpay_init() {
             </div>
             <?php
         }
-        
+
         public function get_payment_staus() {
             $status = 'wait';
             $message = '';
@@ -343,6 +405,35 @@ function woocommerce_hitpay_init() {
 
             echo json_encode($data);
             die();
+        }
+        
+        public function return_from_hitpay() {
+            if (!isset($_GET['order_id'])) {
+                $this->log('return_from_hitpay order_id check failed');
+                exit;
+            }
+
+            $order_id = (int)sanitize_text_field($_GET['order_id']);
+            $order = new WC_Order($order_id);
+            
+            if (isset($_GET['status'])) {
+                $status = sanitize_text_field($_GET['status']);
+                $reference = sanitize_text_field($_GET['reference']);
+
+                if ($status == 'canceled') {
+                    $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
+                    $order->update_status('cancelled', $status_message);
+                    
+                    $order->add_meta_data('HitPay_reference', $reference);
+                    $order->save_meta_data();
+                    
+                    wp_redirect( add_query_arg( 'cancelled', 'true', wc_get_checkout_url() ) );exit;
+                }
+                
+                if ($status == 'completed') {
+                    wp_redirect(add_query_arg( 'status', $status, $this->get_return_url( $order )));exit;
+                }
+            }
         }
         
         public function web_hook_handler() {
@@ -384,6 +475,7 @@ function woocommerce_hitpay_init() {
                             && $order_data['currency'] == $_POST['currency']
                         ) {
                             $payment_id = sanitize_text_field($_POST['payment_id']);
+                            $payment_request_id = sanitize_text_field($_POST['payment_request_id']);
                             $hitpay_currency = sanitize_text_field($_POST['currency']);
                             $hitpay_amount = sanitize_text_field($_POST['amount']);
                             
@@ -391,6 +483,7 @@ function woocommerce_hitpay_init() {
                             $order->update_status('processing', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
 
                             $order->add_meta_data('HitPay_transaction_id', $payment_id);
+                            $order->add_meta_data('HitPay_payment_request_id', $payment_request_id);
                             $order->add_meta_data('HitPay_is_paid', 1);
                             $order->add_meta_data('HitPay_currency', $hitpay_currency);
                             $order->add_meta_data('HitPay_amount', $hitpay_amount);
@@ -451,6 +544,10 @@ function woocommerce_hitpay_init() {
             } catch (\Exception $e) {
                 $this->log('Webhook Catch');
                 $this->log('Exception:'.$e->getMessage());
+                
+                $order->update_status('failed', 'Error :'.$e->getMessage());
+                $order->add_meta_data('HitPay_WHS', 'failed');
+                $woocommerce->cart->empty_cart();
             }
             exit;
         }
@@ -460,6 +557,8 @@ function woocommerce_hitpay_init() {
             global $woocommerce;
             if (isset($_GET['get_order_status'])) {
                 $this->get_payment_staus();
+            } else if (isset($_GET['return'])) {
+                $this->return_from_hitpay();
             } else {
                 $this->web_hook_handler();
             }
@@ -493,8 +592,9 @@ function woocommerce_hitpay_init() {
                     $this->api_key,
                     $this->getMode()
                 );
-                    
-                $redirect_url = $this->get_return_url( $order );
+
+                //$redirect_url = $this->get_return_url( $order );
+                $redirect_url = site_url().'/?wc-api=wc_hitpay&return=1&order_id='.$order_id;
                 $webhook = site_url().'/?wc-api=wc_hitpay&order_id='.$order_id;
                 
                 $create_payment_request = new CreatePayment();
@@ -596,8 +696,6 @@ function enable_hitpay_gateway( $available_gateways ) {
         if(empty($settings['salt'])) {
             unset( $available_gateways['hitpay'] );
         } elseif(empty($settings['api_key'])) {
-            unset( $available_gateways['hitpay'] );
-        } elseif (!$settings['payments']) {
             unset( $available_gateways['hitpay'] );
         }
     } 
