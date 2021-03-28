@@ -98,8 +98,8 @@ function woocommerce_hitpay_init() {
                 
                 if (!empty($payment_method)) {
             ?>
-                    <p style="padding: 10px; font-size: 16px; color: blue; position: relative; top: 10px;">
-                    <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucfirst($payment_method)?></span>
+                    <p class="form-field form-field-wide wc-hitpay-status" style="padding: 10px; font-size: 16px; color: blue; top: 10px;">
+                        <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucwords(str_replace("_", " ", $payment_method)) ?></span>
                     </p>
             <?php
                 }
