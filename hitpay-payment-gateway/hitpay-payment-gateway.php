@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 2.2
+Version: 2.5
 Requires at least: 4.0
 Tested up to: 5.6.2
 WC requires at least: 2.4
@@ -98,8 +98,8 @@ function woocommerce_hitpay_init() {
                 
                 if (!empty($payment_method)) {
             ?>
-                    <p style="padding: 10px; font-size: 16px; color: blue; position: relative; top: 10px;">
-                    <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucfirst($payment_method)?></span>
+                     <p class="form-field form-field-wide wc-hitpay-status" style="padding: 10px; font-size: 16px; color: blue; top: 10px;">
+                        <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucwords(str_replace("_", " ", $payment_method)) ?></span>
                     </p>
             <?php
                 }
@@ -246,13 +246,18 @@ function woocommerce_hitpay_init() {
                 $status = sanitize_text_field($_GET['status']);
 
                 if ($status == 'canceled') {
-                    $reference = sanitize_text_field($_GET['reference']);
-                    
-                    $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
-                    $order->update_status('cancelled', $status_message);
-                    
-                    $order->add_meta_data('HitPay_reference', $reference);
-                    $order->save_meta_data();
+                    $status = $order->get_status();
+                    if ($status == 'processing') {
+                        $status = 'completed';
+                    } else {
+                        $reference = sanitize_text_field($_GET['reference']);
+
+                        $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
+                        $order->update_status('cancelled', $status_message);
+
+                        $order->add_meta_data('HitPay_reference', $reference);
+                        $order->save_meta_data();
+                    }
                 }
                 
                 if ($status == 'completed') {
@@ -276,6 +281,19 @@ function woocommerce_hitpay_init() {
                     
                     show_hitpay_status();
                 });
+                
+                function show_hitpay_status(type='') {
+                    jQuery('.payment-panel-wait').hide();
+                    <?php  if ($status == 'completed' || $status == 'pending') {?>
+                    jQuery('.woocommerce-thankyou-order-received').show();
+                    jQuery('.woocommerce-thankyou-order-details').show();
+                    <?php } ?>
+                    jQuery('.woocommerce-order-details').show();
+                    jQuery('.woocommerce-customer-details').show();
+                    if (type.length > 0) {
+                        jQuery('.payment-panel-'+type).show();
+                    }
+                 }
             </script>
             <?php  if ($status == 'wait') {?>
             <style>
@@ -318,19 +336,6 @@ function woocommerce_hitpay_init() {
                              }
                          }
                          hitpay_status_loop();
-                     }
-                     
-                     function show_hitpay_status(type='') {
-                        jQuery('.payment-panel-wait').hide();
-                        <?php  if ($status == 'completed' || $status == 'pending') {?>
-                        jQuery('.woocommerce-thankyou-order-received').show();
-                        jQuery('.woocommerce-thankyou-order-details').show();
-                        <?php } ?>
-                        jQuery('.woocommerce-order-details').show();
-                        jQuery('.woocommerce-customer-details').show();
-                        if (type.length > 0) {
-                            jQuery('.payment-panel-'+type).show();
-                        }
                      }
                 });
             </script>
@@ -421,13 +426,18 @@ function woocommerce_hitpay_init() {
                 $reference = sanitize_text_field($_GET['reference']);
 
                 if ($status == 'canceled') {
-                    $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
-                    $order->update_status('cancelled', $status_message);
-                    
-                    $order->add_meta_data('HitPay_reference', $reference);
-                    $order->save_meta_data();
-                    
-                    wp_redirect( add_query_arg( 'cancelled', 'true', wc_get_checkout_url() ) );exit;
+                    $status = $order->get_status();
+                    if ($status == 'processing') {
+                        $status = 'completed';
+                    } else {
+                        $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
+                        $order->update_status('cancelled', $status_message);
+
+                        $order->add_meta_data('HitPay_reference', $reference);
+                        $order->save_meta_data();
+
+                        wp_redirect( add_query_arg( 'cancelled', 'true', wc_get_checkout_url() ) );exit;
+                    }
                 }
                 
                 if ($status == 'completed') {

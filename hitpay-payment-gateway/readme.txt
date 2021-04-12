@@ -3,7 +3,7 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 5.6.2
-Stable tag: 2.2
+Stable tag: 2.4
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 5.0.0
@@ -98,3 +98,12 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 2.2 =
 - Resolved a bug
+
+= 2.3 =
+- Resolved a bug
+
+= 2.4 =
+- If customer click back button, check the order status if paid before cancelling the order.
+
+= 2.5 =
+- Fix payment method text position
