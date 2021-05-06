@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 2.6
+Version: 2.7
 Requires at least: 4.0
 Tested up to: 5.6.2
 WC requires at least: 2.4
@@ -19,6 +19,8 @@ if (!defined('ABSPATH')) {
 
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
+
+require_once HITPAY_PLUGIN_PATH . 'vendor/softbuild/hitpay-sdk/src/CurlEmulator.php';
 
 require_once HITPAY_PLUGIN_PATH . 'vendor/autoload.php';
 
@@ -75,23 +77,28 @@ function woocommerce_hitpay_init() {
                 $order_id = $order->get_id();
                 $payment_method = '';
                 $payment_request_id = get_post_meta( $order_id, 'HitPay_payment_request_id', true );
+                
                 if (!empty($payment_request_id)) {
                     $payment_method = get_post_meta( $order_id, 'HitPay_payment_method', true );
                     if (empty($payment_method)) {
-                        $hitpay_client = new Client(
-                            $this->api_key,
-                            $this->getMode()
-                        );
+                        try {
+                            $hitpay_client = new Client(
+                                $this->api_key,
+                                $this->getMode()
+                            );
 
-                        $paymentStatus = $hitpay_client->getPaymentStatus($payment_request_id);
-                        if ($paymentStatus) {
-                            $payments = $paymentStatus->payments;
-                            if (isset($payments[0])) {
-                                $payment = $payments[0];
-                                $payment_method = $payment->payment_type;
-                                $order->add_meta_data('HitPay_payment_method', $payment_method);
-                                $order->save_meta_data();
+                            $paymentStatus = $hitpay_client->getPaymentStatus($payment_request_id);
+                            if ($paymentStatus) {
+                                $payments = $paymentStatus->payments;
+                                if (isset($payments[0])) {
+                                    $payment = $payments[0];
+                                    $payment_method = $payment->payment_type;
+                                    $order->add_meta_data('HitPay_payment_method', $payment_method);
+                                    $order->save_meta_data();
+                                }
                             }
+                        } catch (\Exception $e) {
+                            $payment_method = $e->getMessage();
                         }
                     }
                 }
@@ -604,6 +611,7 @@ function woocommerce_hitpay_init() {
          */
         public function process_payment($order_id) {
             global $woocommerce;
+
             $order = wc_get_order($order_id);
             
             $order_data = $order->get_data();
@@ -629,6 +637,8 @@ function woocommerce_hitpay_init() {
                 
                 $create_payment_request->setName($order_data['billing']['first_name'] . ' ' . $order_data['billing']['last_name']);
                 $create_payment_request->setEmail($order_data['billing']['email']);
+                
+                $create_payment_request->setPurpose($this->getSiteName());
                 
                 $this->log('Request:');
                 $this->log((array)$create_payment_request);
@@ -660,6 +670,17 @@ function woocommerce_hitpay_init() {
                     'redirect' => WC_Cart::get_checkout_url()
                 );
             }
+        }
+        
+        public function getSiteName()
+        {   global $blog_id;
+
+            if (is_multisite()) {
+                $path = get_blog_option($blog_id, 'blogname');
+            } else{
+              $path = get_option('blogname');
+            }
+            return $path;
         }
         
         public function getPaymentMethods()
