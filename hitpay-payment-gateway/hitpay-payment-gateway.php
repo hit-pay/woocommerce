@@ -20,6 +20,39 @@ if (!defined('ABSPATH')) {
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
+define('PLUGIN_NAME', 'HitPay Payment Gateway');
+define('MINIMUM_WC_VERSION', '3.5.0');
+
+/**
+ * Check if Woocommerce Plugin is active.
+ */
+if (!is_plugin_active('woocommerce/woocommerce.php')) {
+    // Deactivate the plugin
+    deactivate_plugins(plugin_basename(__FILE__));
+    // Display admin notice
+    $error_message = sprintf(
+        '%1$s requires WooCommerce version %2$s or higher. Please %3$supdate WooCommerce%4$s to the latest version, or %5$sdownload the minimum required version &raquo;%6$s',
+        '<strong>' . PLUGIN_NAME . '</strong>',
+        MINIMUM_WC_VERSION,
+        '<a href="' . esc_url(admin_url('update-core.php')) . '">',
+        '</a>',
+        '<a href="' . esc_url('https://downloads.wordpress.org/plugin/woocommerce.' . MINIMUM_WC_VERSION . '.zip') . '">',
+        '</a>'
+    );
+    wp_die($error_message);
+}
+
+/**
+ * Deactivate HitPay Plugin if Woocommerce Plugin deactivated.
+ */
+add_action( 'deactivated_plugin', 'detect_plugin_deactivation', 10, 2 );
+function detect_plugin_deactivation( $plugin, $network_activation ) {
+    if ($plugin=="woocommerce/woocommerce.php")
+    {
+        deactivate_plugins(plugin_basename(__FILE__));
+    }
+}
+
 require_once HITPAY_PLUGIN_PATH . 'vendor/softbuild/hitpay-sdk/src/CurlEmulator.php';
 
 require_once HITPAY_PLUGIN_PATH . 'vendor/autoload.php';
