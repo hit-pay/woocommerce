@@ -114,3 +114,9 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 = 2.7 =
 - Added simulator for CURL if not enabled on the server
 - Sending sitename to the gateway(helpful for the multi sites)
+
+= 2.7.1 =
+- Removed text: "Allows secure payments PayNow QR, Credit Card, WeChatPay and AliPay payments. You will need an HitPay account, contact support@hitpay.zendesk.com."
+- Added a text below Live Mode "(Enable Checkbox to enable payments in live mode)"
+- Added a text below API keys and Salt : "(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)
+- Added Shopee Pay and Hoolah payment logos support. The logos should be visible at checkout page

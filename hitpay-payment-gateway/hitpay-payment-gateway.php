@@ -49,7 +49,7 @@ function woocommerce_hitpay_init() {
             $this->icon = HITPAY_PLUGIN_URL . 'assets/images/logo.png';
             $this->has_fields = false;
             $this->method_title = __('HitPay Payment Gateway', $this->domain);
-            $this->method_description = __('Allows secure payments PayNow QR, Credit Card, WeChatPay and AliPay payments. You will need an HitPay account, contact support@hitpay.zendesk.com.', $this->domain);
+            //$this->method_description = __('Allows secure payments PayNow QR, Credit Card, WeChatPay and AliPay payments. You will need an HitPay account, contact support@hitpay.zendesk.com.', $this->domain);
             
             // Define user set variables
             $this->title = $this->get_option('title');
@@ -166,21 +166,22 @@ function woocommerce_hitpay_init() {
                     'title' => __('Live Mode', $this->domain),
                     'type' => 'checkbox',
                     'label' => __(' ', $this->domain),
-                    'default' => 'no'
+                    'default' => 'no',
+                    'description'=> __( '(Enable Checkbox to enable payments in live mode)', $this->domain )
                 ),
                 'api_key' => array(
                     'title' => __('Api Key', $this->domain),
                     'type' => 'text',
-                    'description' => __('Copy/paste values from HitPay Dashboard under Settings > Payment Gateway > API Keys.', $this->domain),
+                    'description' => __('(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)', $this->domain),
                     'default' => '',
-                    'desc_tip' => true,
+                    //'desc_tip' => true,
                 ),
                 'salt' => array(
                     'title' => __('Salt', $this->domain),
                     'type' => 'text',
-                    'description' => __('Copy/paste values from HitPay Dashboard under Settings > Payment Gateway > API Keys.', $this->domain),
+                    'description' => __('(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)', $this->domain),
                     'default' => '',
-                    'desc_tip' => true,
+                    //'desc_tip' => true,
                 ),
                 'payments' => array(
                     'title' => __('Payment Logos', $this->domain),
@@ -704,6 +705,8 @@ function woocommerce_hitpay_init() {
                 'grabpay' => __('GrabPay', $this->domain),
                 'wechatpay' => __('WeChatPay', $this->domain),
                 'alipay' => __('AliPay', $this->domain),
+                'shopeepay'        => __( 'ShopeePay', $this->domain ),
+                'hoolahpay'        => __( 'HoolahPay', $this->domain ),
             ];
             
             return $methods;
