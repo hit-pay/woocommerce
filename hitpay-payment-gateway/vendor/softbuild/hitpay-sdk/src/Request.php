@@ -92,7 +92,6 @@ class Request
                 $request = http_build_query($request);
                 curl_setopt($this->ch, CURLOPT_POSTFIELDS, $request);
             }
-
             curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->getHeaders());
 
             $result = curl_exec($this->ch);
@@ -123,6 +122,8 @@ class Request
             throw new \Exception($error);
         } elseif (isset($response->detail)) {
             throw new \Exception($response->detail);
+        } elseif (isset($response->message)) {
+            throw new \Exception($response->message.'.');
         } elseif ($httpCode != 200 && $httpCode != 201) {
             $message = isset($this->errors[$httpCode])
                 ? $this->errors[$httpCode]
@@ -138,7 +139,8 @@ class Request
     {
         return [
             'Content-Type: ' . static::TYPE_CONTENT,
-            'X-BUSINESS-API-KEY: ' . $this->privateApiKey
+            'X-BUSINESS-API-KEY: ' . $this->privateApiKey,
+            'X-Requested-With: XMLHttpRequest'
         ];
     }
 
