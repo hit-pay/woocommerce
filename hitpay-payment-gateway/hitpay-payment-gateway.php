@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 2.7
+Version: 2.8
 Requires at least: 4.0
-Tested up to: 5.6.2
+Tested up to: 5.8.2
 WC requires at least: 2.4
-WC tested up to: 5.0.0
+WC tested up to: 5.8.1
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -44,6 +44,11 @@ function woocommerce_hitpay_init() {
          */
         public function __construct() {
             $this->domain = 'hitpay';
+            
+            $this->supports = array(
+                'products',
+                'refunds'
+            );
 
             $this->id = 'hitpay';
             $this->icon = HITPAY_PLUGIN_URL . 'assets/images/logo.png';
@@ -435,7 +440,7 @@ function woocommerce_hitpay_init() {
 
                 if ($status == 'canceled') {
                     $status = $order->get_status();
-                    if ($status == 'processing') {
+                    if ($status == 'processing' || $status == 'completed') {
                         $status = 'completed';
                     } else {
                         $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
@@ -582,7 +587,58 @@ function woocommerce_hitpay_init() {
             exit;
         }
 
+        public function process_refund($orderId, $amount = NULL, $reason = '') {
+            $order = wc_get_order($orderId);
+            $amount = (float)strip_tags(trim($amount));
+            $amountValue = number_format($amount, 2);
+            
+            try {
+                $HitPay_transaction_id = get_post_meta( $orderId, 'HitPay_transaction_id', true );
+                $HitPay_is_refunded = get_post_meta( $orderId, 'HitPay_is_refunded', true );
+                if ($HitPay_is_refunded == 1) {
+                    throw new Exception(__('Only one refund allowed per transaction by HitPay Gateway.',  $this->domain));
+                }
+                
+                $order_total_paid = $order->get_total();
+                
+                if ($amountValue <=0 ) {
+                    throw new Exception(__('Refund amount shoule be greater than 0.',  $this->domain));
+                }
+                
+                if ($amountValue > $order_total_paid) {
+                    throw new Exception(__('Refund amount shoule be less than or equal to order paid total.',  $this->domain));
+                }
+                
+                $hitpayClient = new Client(
+                    $this->api_key,
+                    $this->getMode()
+                );
 
+                $result = $hitpayClient->refund($HitPay_transaction_id, $amountValue);
+
+                $order->add_meta_data('HitPay_is_refunded', 1);
+                $order->add_meta_data('HitPay_refund_id', $result->getId());
+                $order->add_meta_data('HitPay_refund_amount_refunded', $result->getAmountRefunded());
+                $order->add_meta_data('HitPay_refund_created_at', $result->getCreatedAt());
+                $order->save_meta_data();
+
+                $message = __('Refund successful. Refund Reference Id: '.$result->getId().', '
+                    . 'Payment Id: '.$HitPay_transaction_id.', Amount Refunded: '.$result->getAmountRefunded().', '
+                    . 'Payment Method: '.$result->getPaymentMethod().', Created At: '.$result->getCreatedAt(), $this->domain);
+ 
+                $total_refunded = $result->getAmountRefunded();
+                if ($total_refunded >= $order_total_paid) {
+                    $order->update_status('refunded', $message);
+                } else {
+                    $order->add_order_note( $message );
+                }
+                
+                return true;
+            } catch (\Exception $e) {
+                return new WP_Error(400, $e->getMessage());
+            }
+        }
+   
         public function check_ipn_response() {
             global $woocommerce;
             if (isset($_GET['get_order_status'])) {
