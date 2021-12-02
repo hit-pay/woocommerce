@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 2.8
+Version: 2.9
 Requires at least: 4.0
 Tested up to: 5.8.2
 WC requires at least: 2.4
@@ -54,8 +54,7 @@ function woocommerce_hitpay_init() {
             $this->icon = HITPAY_PLUGIN_URL . 'assets/images/logo.png';
             $this->has_fields = false;
             $this->method_title = __('HitPay Payment Gateway', $this->domain);
-            //$this->method_description = __('Allows secure payments PayNow QR, Credit Card, WeChatPay and AliPay payments. You will need an HitPay account, contact support@hitpay.zendesk.com.', $this->domain);
-            
+
             // Define user set variables
             $this->title = $this->get_option('title');
             $this->description = $this->get_option('description');
@@ -64,6 +63,7 @@ function woocommerce_hitpay_init() {
             $this->api_key = $this->get_option('api_key');
             $this->salt = $this->get_option('salt');
             $this->payments = $this->get_option('payments');
+            $this->order_status = $this->get_option('order_status');
 
 	    // Load the settings.
             $this->init_form_fields();
@@ -74,10 +74,11 @@ function woocommerce_hitpay_init() {
             add_action('woocommerce_thankyou_' . $this->id, array($this, 'thankyou_page'));
             add_action('woocommerce_api_'. strtolower("WC_HitPay"), array( $this, 'check_ipn_response' ) );
             add_filter('woocommerce_gateway_icon', array($this, 'custom_payment_gateway_icons'), 10, 2 );
-            add_action( 'woocommerce_admin_order_data_after_order_details', array( $this, 'admin_order_details'), 10, 3 );
+            add_action('woocommerce_admin_order_totals_after_total', array($this, 'admin_order_totals'), 10, 1);
         }
         
-        public function admin_order_details( $order ){
+        public function admin_order_totals( $order_id ){
+            $order = new WC_Order($order_id);
             if ($order->get_payment_method() == $this->id) {
                 $order_id = $order->get_id();
                 $payment_method = '';
@@ -85,7 +86,8 @@ function woocommerce_hitpay_init() {
                 
                 if (!empty($payment_request_id)) {
                     $payment_method = get_post_meta( $order_id, 'HitPay_payment_method', true );
-                    if (empty($payment_method)) {
+                    $fees = get_post_meta( $order_id, 'HitPay_fees', true );
+                    if (empty($payment_method) || empty($fees)) {
                         try {
                             $hitpay_client = new Client(
                                 $this->api_key,
@@ -99,6 +101,8 @@ function woocommerce_hitpay_init() {
                                     $payment = $payments[0];
                                     $payment_method = $payment->payment_type;
                                     $order->add_meta_data('HitPay_payment_method', $payment_method);
+                                    $fees = $payment->fees;
+                                    $order->add_meta_data('HitPay_fees', $fees);
                                     $order->save_meta_data();
                                 }
                             }
@@ -109,10 +113,31 @@ function woocommerce_hitpay_init() {
                 }
                 
                 if (!empty($payment_method)) {
+                    $HitPay_currency = get_post_meta( $order_id, 'HitPay_currency', true );
             ?>
-                     <p class="form-field form-field-wide wc-hitpay-status" style="padding: 10px; font-size: 16px; color: blue; top: 10px;">
-                        <?php echo __('HitPay Payment Method:', $this->domain) ?> <span style="color: blue;"><?php echo ucwords(str_replace("_", " ", $payment_method)) ?></span>
-                    </p>
+                    <table class="wc-order-totals" style="border-top: 1px solid #999; margin-top:12px; padding-top:12px">
+			<tbody>
+                            <tr>
+				<td class="label"><?php echo __('HitPay Payment Type', $this->domain) ?>:</td>
+				<td width="1%"></td>
+				<td class="total">
+                                    <span class="woocommerce-Price-amount amount"><bdi><?php echo ucwords(str_replace("_", " ", $payment_method)) ?></bdi></span>
+                                </td>
+                            </tr>
+                            <tr>
+				<td class="label"><?php echo __('HitPay Fee', $this->domain) ?>:</td>
+				<td width="1%"></td>
+				<td class="total">
+                                    <span class="woocommerce-Price-amount amount">
+                                        <bdi>
+                                        <?php echo wc_price($fees, array('currency' => $HitPay_currency)); ?>
+                                        </bdi>
+                                    </span>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
             <?php
                 }
             }
@@ -179,22 +204,27 @@ function woocommerce_hitpay_init() {
                     'type' => 'text',
                     'description' => __('(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)', $this->domain),
                     'default' => '',
-                    //'desc_tip' => true,
                 ),
                 'salt' => array(
                     'title' => __('Salt', $this->domain),
                     'type' => 'text',
                     'description' => __('(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)', $this->domain),
                     'default' => '',
-                    //'desc_tip' => true,
                 ),
                 'payments' => array(
                     'title' => __('Payment Logos', $this->domain),
                     'type' => 'multiselect',
-                    'default' => __('Activate payment methods in the HitPay dashboard under Settings > Payment Gateway > Integrations.', $this->domain),
+                    'description' => __('Activate payment methods in the HitPay dashboard under Settings > Payment Gateway > Integrations.', $this->domain),
                     'css' => 'height: 10rem;',
-                    'desc_tip' => true,
                     'options' => $this->getPaymentIcons()
+                ),
+                'order_status' => array(
+                    'title' => __('Order Status', $this->domain),
+                    'type' => 'select',
+                    'class' => 'wc-enhanced-select',
+                    'description' => __('Set your desired order status upon successful payment. ', $this->domain),
+                    'options' => $this->getOrderStatuses(),
+                    'default' => 'wc-processing'
                 ),
                 'debug' => array(
                     'title' => __('Debug', $this->domain),
@@ -260,7 +290,7 @@ function woocommerce_hitpay_init() {
 
                 if ($status == 'canceled') {
                     $status = $order->get_status();
-                    if ($status == 'processing') {
+                    if ($status == 'processing' || $status == 'completed') {
                         $status = 'completed';
                     } else {
                         $reference = sanitize_text_field($_GET['reference']);
@@ -514,8 +544,15 @@ function woocommerce_hitpay_init() {
                             $hitpay_currency = sanitize_text_field($_POST['currency']);
                             $hitpay_amount = sanitize_text_field($_POST['amount']);
                             
-                            
-                            $order->update_status('processing', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
+                            if (empty($this->order_status)) {
+                                $order->update_status('processing', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
+                            } elseif ($this->order_status == 'wc-pending') {
+                                $order->update_status('pending', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
+                            } elseif ($this->order_status == 'wc-processing') {
+                                $order->update_status('processing', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
+                            } elseif ($this->order_status == 'wc-completed') {
+                                $order->update_status('completed', __('Payment successful. Transaction Id: '.$payment_id, $this->domain));
+                            }
 
                             $order->add_meta_data('HitPay_transaction_id', $payment_id);
                             $order->add_meta_data('HitPay_payment_request_id', $payment_request_id);
@@ -768,7 +805,8 @@ function woocommerce_hitpay_init() {
             return $methods;
         }
         
-        public function log($content) {
+        public function log($content)
+        {
             $debug = $this->debug;
             if ($debug == true) {
                 $file = HITPAY_PLUGIN_PATH.'debug.log';
@@ -778,6 +816,16 @@ function woocommerce_hitpay_init() {
                 fwrite($fp, print_r($content, true));
                 fclose($fp);
             }
+        }
+        
+        public function getOrderStatuses()
+        {
+            $statuses = wc_get_order_statuses();
+            unset($statuses['wc-cancelled']);
+            unset($statuses['wc-refunded']);
+            unset($statuses['wc-failed']);
+            unset($statuses['wc-on-hold']);
+            return $statuses;
         }
     }
 }
