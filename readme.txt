@@ -76,6 +76,9 @@ Yes. You can copy the API keys and Salt values from the HitPay Web Dashboard und
 You can find more documentation about our service on our [get started](https://hitpay.zendesk.com/hc/en-us/sections/360002421091-About-HitPay) page, our [technical documentation](https://hitpay.zendesk.com/hc/en-us/articles/900004225243-HitPay-WooCommerce-Payment-Gateway-Singapore-How-to-update-the-HitPay-WooCommerce-Plugin-) page or our [resources](https://hit-pay.com/docs.html) page.
 If there's anything else you need that is not covered on those pages, please get in touch with us, we're here to help you!
 
+== Refunds
+- You can find more details here(https://www.notion.so/hitpay/Woocommerce-Refunds-Instructions-4643b8ab535a401d896f9e7d6f826ad1)
+
 = Where can I get support? =
 
 The easiest and fastest way is via our live chat on our [website](https://www.hitpayapp.com/) or via our [contact form](https://www.hitpayapp.com/contactus).
@@ -117,6 +120,7 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 2.8 =
 - Added Refund Option
+- You can find more details here(https://www.notion.so/hitpay/Woocommerce-Refunds-Instructions-4643b8ab535a401d896f9e7d6f826ad1)
 
 = 2.9 =
 - Payment details displayed on admin order totals
