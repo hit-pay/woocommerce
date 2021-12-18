@@ -1,9 +1,11 @@
+# HitPay ![Logo](hitpay-payment-gateway/assets/img/logo.png)
+
 === HitPay Payment Gateway for WooCommerce ===
 Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 5.8.2
-Stable tag: 2.9
+Stable tag: 3.0
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 5.8.1
@@ -65,6 +67,26 @@ Automatic updates should work like a charm; as always though, ensure you backup 
 8. Click "Save Changes"
 9. All done!
 
+![](hitpay-payment-gateway/assets/screenshots/1-plugin-settings.png)
+
+== Checkout ==
+
+![](hitpay-payment-gateway/assets/screenshots/2-checkout-page.png)
+
+== Refunds ==
+
+1. Log in to Admin
+2. Navigate to Wocommerce ⇒ Orders
+3. Click view icon link/row to navigate to Admin Order Details page.
+4. Scroll down to locate the Refund button as like below screen:
+![](hitpay-payment-gateway/assets/screenshots/3.png)
+5. If order is paid via 'HitPay Payment Gateway' then Woocommerce by default will display this button 'Refund xx via HitPay Payment Gateway' as attached screen:
+![](hitpay-payment-gateway/assets/screenshots/4.png)
+6. If gateway accepted the refund request and the Refund details will be added to order history.
+7. Only one refund is allowed per transaction.
+8. Refund is only applicable if the initial charge was made with PayNow or Card.
+![](hitpay-payment-gateway/assets/screenshots/5.png)
+
 == Frequently Asked Questions ==
 
 = Do I need an API key? =
@@ -122,3 +144,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 - Payment details displayed on admin order totals
 - Order status selection option provided for successful payment
 - Customized payment title 
+
+= 3.0 =
+- Customized for custom-order-numbers-for-woocommerce plugin
