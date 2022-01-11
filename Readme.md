@@ -5,7 +5,7 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 5.8.2
-Stable tag: 3.1
+Stable tag: 3.2.0
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 5.8.1
@@ -150,3 +150,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 3.1 =
 - Fixed Uncaught Error: Class WC_Payment_Class not found during the update time woocommerce plugin went to inactive.
+
+= 3.2.0 =
+- Expires after parameter added to the payment request, if this option is enabled and expiry time set, then checkout URL will expired after set time

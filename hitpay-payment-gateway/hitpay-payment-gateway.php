@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.1
+Version: 3.2.0
 Requires at least: 4.0
 Tested up to: 5.8.2
 WC requires at least: 2.4
@@ -70,7 +70,9 @@ function woocommerce_hitpay_init() {
             $this->salt = $this->get_option('salt');
             $this->payments = $this->get_option('payments');
             $this->order_status = $this->get_option('order_status');
-
+            $this->expires_after_status = $this->get_option('expires_after_status');
+            $this->expires_after = $this->get_option('expires_after');
+            
 	    // Load the settings.
             $this->init_form_fields();
             $this->init_settings();
@@ -81,6 +83,7 @@ function woocommerce_hitpay_init() {
             add_action('woocommerce_api_'. strtolower("WC_HitPay"), array( $this, 'check_ipn_response' ) );
             add_filter('woocommerce_gateway_icon', array($this, 'custom_payment_gateway_icons'), 10, 2 );
             add_action('woocommerce_admin_order_totals_after_total', array($this, 'admin_order_totals'), 10, 1);
+            add_action('admin_footer', array( $this, 'hitpay_admin_footer'), 10, 3 );
         }
         
         public function admin_order_totals( $order_id ){
@@ -238,6 +241,18 @@ function woocommerce_hitpay_init() {
                     'label' => __(' ', $this->domain),
                     'default' => 'no'
                 ),
+                'expires_after_status' => array(
+                    'title' => __('Expire the payment link?', $this->domain),
+                    'type' => 'checkbox',
+                    'label' => __(' ', $this->domain),
+                    'default' => 'no'
+                ),
+                'expires_after' => array(
+                    'title' => __('Expire after [x] mins', $this->domain),
+                    'type' => 'text',
+                    'description' => __('Minimum value is 5. Maximum is 1000', $this->domain),
+                    'default' => '5',
+                ),
             );
 
             $this->form_fields = $field_arr;
@@ -255,13 +270,55 @@ function woocommerce_hitpay_init() {
             } elseif (empty($post_data['woocommerce_hitpay_salt'])) {
                 WC_Admin_Settings::add_error(__('Please enter HitPay API Salt', $this->domain));
             } else {
-                foreach ( $this->get_form_fields() as $key => $field ) {
-                    $setting_value = $this->get_field_value( $key, $field, $post_data );
-                    $this->settings[ $key ] = $setting_value;
+                $noerror = true;
+                if (isset($post_data['woocommerce_hitpay_expires_after_status'])) {
+                    if (empty($post_data['woocommerce_hitpay_expires_after'])) {
+                        $noerror = false;
+                        WC_Admin_Settings::add_error(__('Please enter expiry after mins', $this->domain));
+                    } elseif ($post_data['woocommerce_hitpay_expires_after'] < 5) {
+                        $noerror = false;
+                        WC_Admin_Settings::add_error(__('Expiry after minimum mins should be 5', $this->domain));
+                    } elseif ($post_data['woocommerce_hitpay_expires_after'] > 1000) {
+                        $noerror = false;
+                        WC_Admin_Settings::add_error(__('Expiry after maximum mins should be 1000', $this->domain));
+                    }
                 }
-                return update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ) );
+                
+                if ($noerror) {
+                    foreach ( $this->get_form_fields() as $key => $field ) {
+                        $setting_value = $this->get_field_value( $key, $field, $post_data );
+                        $this->settings[ $key ] = $setting_value;
+                    }
+                    return update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ) );
+                }
             }
 	}
+        
+        public function hitpay_admin_footer() {
+            $this->expires_after_status = $this->get_option('expires_after_status');
+            $this->expires_after = $this->get_option('expires_after');
+            if (isset($_GET['page']) && $_GET['page'] == 'wc-settings' && isset($_GET['section']) && $_GET['section'] == 'hitpay') { 
+            ?>
+            <script type="text/javascript">
+                jQuery(document).ready(function(){
+                    if (jQuery('#woocommerce_hitpay_expires_after_status').is(':checked')) {
+                        jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().show();
+                    } else {
+                        jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
+                    }
+                    
+                    jQuery('#woocommerce_hitpay_expires_after_status').click(function(){
+                        if (jQuery('#woocommerce_hitpay_expires_after_status').is(':checked')) {
+                            jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().show();
+                        } else {
+                            jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
+                        }
+                    });
+                });
+            </script>  
+            <?php
+            }
+        }
         
         function payment_fields()
         { 
@@ -740,10 +797,20 @@ function woocommerce_hitpay_init() {
                 
                 $create_payment_request->setPurpose($this->getSiteName());
                 
+                if ($this->expires_after_status == 'yes') {
+                    if (empty($this->expires_after)) {
+                        $this->expires_after = '6';
+                    }
+                     $create_payment_request->setExpiresAfter($this->expires_after.' mins');
+                }
+                
                 $this->log('Request:');
                 $this->log((array)$create_payment_request);
 
                 $result = $hitpay_client->createPayment($create_payment_request);
+                
+                $this->log('Response:');
+                $this->log((array)$result);
 
                 $order->delete_meta_data('HitPay_payment_id');
                 $order->add_meta_data('HitPay_payment_id', $result->getId());
