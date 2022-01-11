@@ -99,6 +99,11 @@ class CreatePayment
      * @var string
      */
     public $channel;
+    
+    /**
+     * @var string
+     */
+    public $expires_after;
 
     /**
      * @return float
@@ -195,7 +200,7 @@ class CreatePayment
     {
         return $this->expiry_date;
     }
-
+    
     /**
      * @param float $amount
      * @return CreatePayment
@@ -343,6 +348,25 @@ class CreatePayment
     public function setChannel($channel)
     {
         $this->channel = $channel;
+
+        return $this;
+    }
+    
+    /**
+     * @return string
+     */
+    public function getExpiresAfter()
+    {
+        return $this->expires_after;
+    }
+    
+    /**
+     * @param string $expiry_after
+     * @return CreatePayment
+     */
+    public function setExpiresAfter($expires_after)
+    {
+        $this->expires_after = $expires_after;
 
         return $this;
     }
