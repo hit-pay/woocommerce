@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.2.2
+Version: 3.2.3
 Requires at least: 4.0
 Tested up to: 5.8.2
 WC requires at least: 2.4
@@ -868,6 +868,8 @@ function woocommerce_hitpay_init() {
                 'visa' => __('Visa', $this->domain),
                 'master' => __('Mastercard', $this->domain),
                 'american_express' => __('American Express', $this->domain),
+                'apple_pay' => __('Apple Pay', $this->domain),
+                'google_pay' => __('Google Pay', $this->domain),
                 'grabpay' => __('GrabPay', $this->domain),
                 'wechatpay' => __('WeChatPay', $this->domain),
                 'alipay' => __('AliPay', $this->domain),
