@@ -154,12 +154,6 @@ function woocommerce_hitpay_init() {
         
         public function custom_payment_gateway_icons( $icon, $gateway_id ){
             $icons = $this->getPaymentIcons();
-            foreach( WC()->payment_gateways->get_available_payment_gateways() as $gateway ) {
-                if( $gateway->id == $gateway_id ){
-                    $title = $gateway->get_title();
-                    break;
-                }
-            }
             
             if($gateway_id == 'hitpay') {
                 $icon = '';
