@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.2.2
+Version: 3.2.4
 Requires at least: 4.0
-Tested up to: 5.8.2
+Tested up to: 6.0.1
 WC requires at least: 2.4
-WC tested up to: 5.8.1
+WC tested up to: 6.7.0
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -72,6 +72,18 @@ function woocommerce_hitpay_init() {
             $this->order_status = $this->get_option('order_status');
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
+            
+            if (!$this->option_exists("woocommerce_hitpay_customize")) {
+                $this->customize = 1;
+            } else {
+                $this->customize = get_option('woocommerce_hitpay_customize');
+            }
+            
+            if (!$this->option_exists("woocommerce_hitpay_style")) {
+                $this->style = 'width: 100%; margin-bottom: 1rem; background: #212b5f; padding: 20px; color: #fff; font-size: 22px;';
+            } else {
+                $this->style = get_option('woocommerce_hitpay_style');
+            }
             
 	    // Load the settings.
             $this->init_form_fields();
@@ -289,6 +301,19 @@ function woocommerce_hitpay_init() {
                         $setting_value = $this->get_field_value( $key, $field, $post_data );
                         $this->settings[ $key ] = $setting_value;
                     }
+                    
+                    if (isset($post_data['woocommerce_hitpay_customize'])) {
+                        update_option('woocommerce_hitpay_customize', 1);
+                    } else {
+                        update_option('woocommerce_hitpay_customize', 0);
+                    }
+                    $style = $post_data['woocommerce_hitpay_style'];
+                    $style = sanitize_text_field($style);
+                    update_option('woocommerce_hitpay_style', $style);
+                    
+                    $this->customize = get_option('woocommerce_hitpay_customize');
+                    $this->style = get_option('woocommerce_hitpay_style');
+                    
                     return update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ) );
                 }
             }
@@ -297,10 +322,69 @@ function woocommerce_hitpay_init() {
         public function hitpay_admin_footer() {
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
-            if (isset($_GET['page']) && $_GET['page'] == 'wc-settings' && isset($_GET['section']) && $_GET['section'] == 'hitpay') { 
+            if (isset($_GET['page']) && sanitize_text_field($_GET['page']) == 'wc-settings' && isset($_GET['section']) && sanitize_text_field($_GET['section']) == 'hitpay') { 
+                $hitpaytab = 'settings';
+                if(isset($_GET['hitpaytab'])) {
+                    $hitpaytab = sanitize_text_field($_GET['hitpaytab']);
+                }
             ?>
+            <nav id="hitpay-tabs" class="nav-tab-wrapper" style="display: none">
+                <a id="hitpay-setting-tab" href="?page=wc-settings&section=hitpay&tab=checkout&hitpaytab=settings" class="nav-tab <?php echo (($hitpaytab == 'settings') ? 'nav-tab-active':'')?>">Settings</a>
+                <a id="hitpay-customize-tab"href="?page=wc-settings&section=hitpay&hitpaytab=customize&tab=checkout" class="nav-tab <?php echo (($hitpaytab != 'settings') ? 'nav-tab-active':'')?>">Customization</a>
+            </nav>
+            <div class="tab-content" id="hitpay-tab-content-customize" style="display: none">
+                <table class="form-table">
+                    <tbody>
+                        <tr valign="top">
+                            <th scope="row" class="titledesc">
+                                <label for="woocommerce_hitpay_customize">Enable Status Display </label>
+                            </th>
+                            <td class="forminp">
+                                <fieldset>
+                                    <legend class="screen-reader-text"><span>Enable Status Display</span></legend>
+                                    <label for="woocommerce_hitpay_customize">
+                                        <input class="" type="checkbox" name="woocommerce_hitpay_customize" id="woocommerce_hitpay_customize" style="" value="1" 
+                                            <?php echo $this->customize ? 'checked="checked"':''?> >
+                                    </label>
+                                    <br>
+                                    <span class="woocommerce-help-tip2">
+                                        If enabled, payment status will be retrieved and displayed on the Order Confirmation Page.
+                                    </span>
+                                </fieldset>
+                            </td>
+                        </tr>
+			<tr valign="top">
+                            <th scope="row" class="titledesc">
+                               <label for="woocommerce_hitpay_style">Style</label>
+                            </th>
+                            <td class="forminp">
+                                <fieldset>
+                                    <legend class="screen-reader-text"><span>Style</span></legend>
+                                    <textarea rows="3" cols="20" class="input-text wide-input " type="textarea" name="woocommerce_hitpay_style" id="woocommerce_hitpay_style"><?php echo $this->style?></textarea>
+                                    <br/>
+                                    <span class="woocommerce-help-tip2">
+                                       Here you can update CSS styles for HitPay Payment status display container.
+                                   </span>
+                                </fieldset>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <script type="text/javascript">
+                var hitpaytab = '<?php echo $hitpaytab?>';
                 jQuery(document).ready(function(){
+                    jQuery('.wc-admin-breadcrumb').parent().after(jQuery('#hitpay-tabs'));
+                    jQuery('#hitpay-tabs').after(jQuery('#hitpay-tab-content-customize'));
+                    jQuery('#hitpay-tabs').show();
+                    if (hitpaytab == 'settings') {
+                        jQuery('#woocommerce_hitpay_enabled').closest('.form-table').show();
+                        jQuery('#hitpay-tab-content-customize').hide();
+                    } else {
+                        jQuery('#woocommerce_hitpay_enabled').closest('.form-table').hide();
+                        jQuery('#hitpay-tab-content-customize').show();
+                    }
+                    
                     if (jQuery('#woocommerce_hitpay_expires_after_status').is(':checked')) {
                         jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().show();
                     } else {
@@ -318,6 +402,12 @@ function woocommerce_hitpay_init() {
             </script>  
             <?php
             }
+        }
+        
+        public function option_exists($name, $site_wide=false)
+        {
+            global $wpdb; 
+            return $wpdb->query("SELECT * FROM ". ($site_wide ? $wpdb->base_prefix : $wpdb->prefix). "options WHERE option_name ='$name' LIMIT 1");
         }
         
         function payment_fields()
@@ -345,149 +435,153 @@ function woocommerce_hitpay_init() {
          * Output for the order received page.
          */
         public function thankyou_page($order_id) {
-            $order = new WC_Order($order_id);
-            
-            $style = "width: 100%;  margin-bottom: 1rem; background: #212b5f; padding: 20px; color: #fff; font-size: 22px;";
-            if (isset($_GET['status'])) {
-                $status = sanitize_text_field($_GET['status']);
+            if ($this->customize) {
+                $order = new WC_Order($order_id);
 
-                if ($status == 'canceled') {
+                $thankyoupage_ui_enabled = 1;
+                $style = $this->style;
+
+                if (isset($_GET['status'])) {
+                    $status = sanitize_text_field($_GET['status']);
+
+                    if ($status == 'canceled') {
+                        $status = $order->get_status();
+                        if ($status == 'processing' || $status == 'completed') {
+                            $status = 'completed';
+                        } else {
+                            $reference = sanitize_text_field($_GET['reference']);
+
+                            $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
+                            $order->update_status('cancelled', $status_message);
+
+                            $order->add_meta_data('HitPay_reference', $reference);
+                            $order->save_meta_data();
+                        }
+                    }
+
+                    if ($status == 'completed') {
+                        $status = 'wait';
+                    }
+                }
+
+                if ($status != 'wait') {
                     $status = $order->get_status();
-                    if ($status == 'processing' || $status == 'completed') {
-                        $status = 'completed';
-                    } else {
-                        $reference = sanitize_text_field($_GET['reference']);
-
-                        $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
-                        $order->update_status('cancelled', $status_message);
-
-                        $order->add_meta_data('HitPay_reference', $reference);
-                        $order->save_meta_data();
-                    }
-                }
-                
-                if ($status == 'completed') {
-                    $status = 'wait';
-                }
-            }
-            
-            if ($status != 'wait') {
-                $status = $order->get_status();
-            }
-            ?>
-            <script>
-                let is_status_received = false;
-                let hitpay_status_ajax_url = '<?php echo site_url().'/?wc-api=wc_hitpay&get_order_status=1'?>';
-                jQuery(document).ready(function(){
-                    jQuery('.entry-header .entry-title').html('<?php echo __('Order Status', $this->domain)?>');
-                    jQuery('.woocommerce-thankyou-order-received').hide();
-                    jQuery('.woocommerce-thankyou-order-details').hide();
-                    jQuery('.woocommerce-order-details').hide();
-                    jQuery('.woocommerce-customer-details').hide();
-                    
-                    show_hitpay_status();
-                });
-                
-                function show_hitpay_status(type='') {
-                    jQuery('.payment-panel-wait').hide();
-                    <?php  if ($status == 'completed' || $status == 'pending') {?>
-                    jQuery('.woocommerce-thankyou-order-received').show();
-                    jQuery('.woocommerce-thankyou-order-details').show();
-                    <?php } ?>
-                    jQuery('.woocommerce-order-details').show();
-                    jQuery('.woocommerce-customer-details').show();
-                    if (type.length > 0) {
-                        jQuery('.payment-panel-'+type).show();
-                    }
-                 }
-            </script>
-            <?php  if ($status == 'wait') {?>
-            <style>
-                .payment-panel-wait .img-container {
-                    text-align: center;
-                }
-                .payment-panel-wait .img-container img{
-                    display: inline-block !important;
-                }
-            </style>
-            <script>
-                jQuery(document).ready(function(){
-                    check_hitpay_payment_status();
-   
-                    function check_hitpay_payment_status() {
-
-                         function hitpay_status_loop() {
-                             if (is_status_received) {
-                                 return;
-                             }
-
-                             if (typeof(hitpay_status_ajax_url) !== "undefined") {
-                                 jQuery.getJSON(hitpay_status_ajax_url, {'order_id' : <?php echo $order_id?>}, function (data) {
-                                     if (data.status == 'wait') {
-                                        setTimeout(hitpay_status_loop, 2000);
-                                     } else if (data.status == 'error') {
-                                        show_hitpay_status('error');
-                                        is_status_received = true;
-                                     } else if (data.status == 'pending') {
-                                        show_hitpay_status('pending');
-                                        is_status_received = true;
-                                     } else if (data.status == 'failed') {
-                                        show_hitpay_status('failed');
-                                        is_status_received = true;
-                                     } else if (data.status == 'completed') {
-                                        show_hitpay_status('completed');
-                                        is_status_received = true;
-                                     }
-                                });
-                             }
-                         }
-                         hitpay_status_loop();
-                     }
-                });
-            </script>
-            <div class="payment-panel-wait">
-                <h3><?php echo __('We are retrieving your payment status from HitPay, please wait...', $this->domain) ?></h3>
-                <div class="img-container"><img src="<?php echo HITPAY_PLUGIN_URL?>assets/images/loader.gif" /></div>
-            </div>
-            <?php } ?>
-
-            <div class="payment-panel-pending" style="<?php echo ($status == 'pending' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
-                <?php echo __('Your payment status is pending, we will update the status as soon as we receive notification from HitPay.', $this->domain) ?>
-                </div>
-            </div>
-
-            <div class="payment-panel-completed" style="<?php echo ($status == 'completed' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
-                <?php echo __('Your payment is successful with HitPay.', $this->domain) ?>
-                    <img style="width:100px" src="<?php echo HITPAY_PLUGIN_URL?>assets/images/check.png"  />
-                </div>
-            </div>
-
-             <div class="payment-panel-failed" style="<?php echo ($status == 'failed' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
-                <?php echo __('Your payment is failed with HitPay.', $this->domain) ?>
-                </div>
-            </div>
-
-             <div class="payment-panel-cancelled" style="<?php echo ($status == 'cancelled' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
-                <?php 
-                if (isset($status_message) && !empty($status_message)) {
-                    echo $status_message;
-                } else {
-                    echo __('Your order is cancelled.', $this->domain);
                 }
                 ?>
+                <script>
+                    let is_status_received = false;
+                    let hitpay_status_ajax_url = '<?php echo site_url().'/?wc-api=wc_hitpay&get_order_status=1'?>';
+                    jQuery(document).ready(function(){
+                        jQuery('.entry-header .entry-title').html('<?php echo __('Order Status', $this->domain)?>');
+                        jQuery('.woocommerce-thankyou-order-received').hide();
+                        jQuery('.woocommerce-thankyou-order-details').hide();
+                        jQuery('.woocommerce-order-details').hide();
+                        jQuery('.woocommerce-customer-details').hide();
+
+                        show_hitpay_status();
+                    });
+
+                    function show_hitpay_status(type='') {
+                        jQuery('.payment-panel-wait').hide();
+                        <?php  if ($status == 'completed' || $status == 'pending') {?>
+                        jQuery('.woocommerce-thankyou-order-received').show();
+                        jQuery('.woocommerce-thankyou-order-details').show();
+                        <?php } ?>
+                        jQuery('.woocommerce-order-details').show();
+                        jQuery('.woocommerce-customer-details').show();
+                        if (type.length > 0) {
+                            jQuery('.payment-panel-'+type).show();
+                        }
+                     }
+                </script>
+                <?php  if ($status == 'wait') {?>
+                <style>
+                    .payment-panel-wait .img-container {
+                        text-align: center;
+                    }
+                    .payment-panel-wait .img-container img{
+                        display: inline-block !important;
+                    }
+                </style>
+                <script>
+                    jQuery(document).ready(function(){
+                        check_hitpay_payment_status();
+
+                        function check_hitpay_payment_status() {
+
+                             function hitpay_status_loop() {
+                                 if (is_status_received) {
+                                     return;
+                                 }
+
+                                 if (typeof(hitpay_status_ajax_url) !== "undefined") {
+                                     jQuery.getJSON(hitpay_status_ajax_url, {'order_id' : <?php echo $order_id?>}, function (data) {
+                                         if (data.status == 'wait') {
+                                            setTimeout(hitpay_status_loop, 2000);
+                                         } else if (data.status == 'error') {
+                                            show_hitpay_status('error');
+                                            is_status_received = true;
+                                         } else if (data.status == 'pending') {
+                                            show_hitpay_status('pending');
+                                            is_status_received = true;
+                                         } else if (data.status == 'failed') {
+                                            show_hitpay_status('failed');
+                                            is_status_received = true;
+                                         } else if (data.status == 'completed') {
+                                            show_hitpay_status('completed');
+                                            is_status_received = true;
+                                         }
+                                    });
+                                 }
+                             }
+                             hitpay_status_loop();
+                         }
+                    });
+                </script>
+                <div class="payment-panel-wait">
+                    <h3><?php echo __('We are retrieving your payment status from HitPay, please wait...', $this->domain) ?></h3>
+                    <div class="img-container"><img src="<?php echo HITPAY_PLUGIN_URL?>assets/images/loader.gif" /></div>
                 </div>
-            </div>  
-            
-            <div class="payment-panel-error" style="display: none">
-                <div class="message-holder">
-                    <?php echo __('Something went wrong, please contact the merchant.', $this->domain) ?>
+                <?php } ?>
+
+                <div class="payment-panel-pending" style="<?php echo ($status == 'pending' ? 'display: block':'display: none')?>">
+                    <div style="<?php echo $style?>">
+                    <?php echo __('Your payment status is pending, we will update the status as soon as we receive notification from HitPay.', $this->domain) ?>
+                    </div>
                 </div>
-            </div>
+
+                <div class="payment-panel-completed" style="<?php echo ($status == 'completed' ? 'display: block':'display: none')?>">
+                    <div style="<?php echo $style?>">
+                    <?php echo __('Your payment is successful with HitPay.', $this->domain) ?>
+                        <img style="width:100px" src="<?php echo HITPAY_PLUGIN_URL?>assets/images/check.png"  />
+                    </div>
+                </div>
+
+                 <div class="payment-panel-failed" style="<?php echo ($status == 'failed' ? 'display: block':'display: none')?>">
+                    <div style="<?php echo $style?>">
+                    <?php echo __('Your payment is failed with HitPay.', $this->domain) ?>
+                    </div>
+                </div>
+
+                 <div class="payment-panel-cancelled" style="<?php echo ($status == 'cancelled' ? 'display: block':'display: none')?>">
+                    <div style="<?php echo $style?>">
+                    <?php 
+                    if (isset($status_message) && !empty($status_message)) {
+                        echo $status_message;
+                    } else {
+                        echo __('Your order is cancelled.', $this->domain);
+                    }
+                    ?>
+                    </div>
+                </div>  
+
+                <div class="payment-panel-error" style="display: none">
+                    <div class="message-holder">
+                        <?php echo __('Something went wrong, please contact the merchant.', $this->domain) ?>
+                    </div>
+                </div>
             <?php
+            }
         }
 
         public function get_payment_staus() {
@@ -868,6 +962,8 @@ function woocommerce_hitpay_init() {
                 'visa' => __('Visa', $this->domain),
                 'master' => __('Mastercard', $this->domain),
                 'american_express' => __('American Express', $this->domain),
+                'apple_pay' => __('Apple Pay', $this->domain),
+                'google_pay' => __('Google Pay', $this->domain),
                 'grabpay' => __('GrabPay', $this->domain),
                 'wechatpay' => __('WeChatPay', $this->domain),
                 'alipay' => __('AliPay', $this->domain),
