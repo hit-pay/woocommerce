@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.2.4
+Version: 3.2.6
 Requires at least: 4.0
-Tested up to: 6.0.1
+Tested up to: 6.0.2
 WC requires at least: 2.4
-WC tested up to: 6.7.0
+WC tested up to: 6.9.3
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -72,6 +72,9 @@ function woocommerce_hitpay_init() {
             $this->order_status = $this->get_option('order_status');
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
+            $this->currencies = $this->get_option('currencies');
+            $this->billing_countries = $this->get_option('billing_countries');
+            $this->shipping_countries = $this->get_option('shipping_countries');
             
             if (!$this->option_exists("woocommerce_hitpay_customize")) {
                 $this->customize = 1;
@@ -166,18 +169,19 @@ function woocommerce_hitpay_init() {
         
         public function custom_payment_gateway_icons( $icon, $gateway_id ){
             $icons = $this->getPaymentIcons();
-            foreach( WC()->payment_gateways->get_available_payment_gateways() as $gateway ) {
-                if( $gateway->id == $gateway_id ){
-                    $title = $gateway->get_title();
-                    break;
-                }
-            }
             
             if($gateway_id == 'hitpay') {
                 $icon = '';
                 if ($this->payments) {
+                    $pngs = array(
+                        'pesonet',
+                    );
                     foreach ($this->payments as $payment) {
-                        $icon .= ' <img src="' . HITPAY_PLUGIN_URL . 'assets/images/'.$payment.'.svg" alt="' . esc_attr( $icons[$payment] ) . '"  title="' . esc_attr( $icons[$payment] ) . '" />';
+                        $extn = 'svg';
+                        if (in_array($payment, $pngs)) {
+                            $extn = 'png';
+                        }
+                        $icon .= ' <img src="' . HITPAY_PLUGIN_URL . 'assets/images/'.$payment.'.'.$extn.'" alt="' . esc_attr( $icons[$payment] ) . '"  title="' . esc_attr( $icons[$payment] ) . '" />';
                     }
                 }
             }
@@ -264,6 +268,27 @@ function woocommerce_hitpay_init() {
                     'type' => 'text',
                     'description' => __('Minimum value is 5. Maximum is 1000', $this->domain),
                     'default' => '5',
+                ),
+                'currencies' => array(
+                    'title' => __('Currencies', $this->domain),
+                    'type' => 'multiselect',
+                    'css' => 'height: 10rem;',
+                    'description' => __('Select specific currencies where this payment method can be used. If none selected, then assumed it will be available for all the currencies.', $this->domain),
+                    'options' => $this->getCurrencies()
+                ),
+                'billing_countries' => array(
+                    'title' => __('Billing/Invoice Countries', $this->domain),
+                    'type' => 'multiselect',
+                    'css' => 'height: 10rem;',
+                    'description' => __('Select specific countries where this payment method can be used. If none selected, then assumed it will be available for all the countries.', $this->domain),
+                    'options' => $this->getCountries()
+                ),
+                'shipping_countries' => array(
+                    'title' => __('Shipping Countries', $this->domain),
+                    'type' => 'multiselect',
+                    'css' => 'height: 10rem;',
+                    'description' => __('Select specific countries where this payment method can be used. If none selected, then assumed it will be available for all the countries.', $this->domain),
+                    'options' => $this->getCountries()
                 ),
             );
 
@@ -944,17 +969,6 @@ function woocommerce_hitpay_init() {
             return $path;
         }
         
-        public function getPaymentMethods()
-        {
-            $methods = [
-                'paynow_online' => __('PayNow QR', $this->domain),
-                'card' => __('Credit cards', $this->domain),
-                'wechat' => __('WeChatPay and AliPay', $this->domain)
-            ];
-            
-            return $methods;
-        }
-        
         public function getPaymentIcons()
         {
             $methods = [
@@ -970,6 +984,12 @@ function woocommerce_hitpay_init() {
                 'shopeepay'        => __( 'ShopeePay', $this->domain ),
                 'fpx'        => __( 'FPX', $this->domain ),
                 'zip'        => __( 'Zip', $this->domain ),
+                'atomeplus' => __('ATome+'),
+                'unionbank' => __('Unionbank Online'),
+                'qrph' => __('Instapay QR PH'),
+                'pesonet' => __('PESONet'),
+                'gcash' => __('GCash'),
+                'billease' => __('Billease BNPL')
             ];
             
             return $methods;
@@ -997,6 +1017,17 @@ function woocommerce_hitpay_init() {
             unset($statuses['wc-on-hold']);
             return $statuses;
         }
+        
+        public function getCountries()
+        {
+            $countriesObj = new WC_Countries();
+            return $countriesObj->__get('countries');
+        }
+        
+        public function getCurrencies()
+        {
+            return get_woocommerce_currencies();
+        }
     }
 }
 
@@ -1016,6 +1047,21 @@ function enable_hitpay_gateway( $available_gateways ) {
         if(empty($settings['salt'])) {
             unset( $available_gateways['hitpay'] );
         } elseif(empty($settings['api_key'])) {
+            unset( $available_gateways['hitpay'] );
+        }
+        
+        $supported_currencies = $settings['currencies'];
+        if (!in_array(get_woocommerce_currency(), $supported_currencies)) {
+            unset( $available_gateways['hitpay'] );
+        }
+        
+        $supported_billing_countries = $settings['billing_countries'];
+        if ($supported_billing_countries && !in_array(WC()->customer->get_billing_country(), $supported_billing_countries)) {
+            unset( $available_gateways['hitpay'] );
+        }
+        
+        $supported_shipping_countries = $settings['shipping_countries'];
+        if ($supported_shipping_countries && !in_array(WC()->customer->get_shipping_country(), $supported_shipping_countries)) {
             unset( $available_gateways['hitpay'] );
         }
     } 
