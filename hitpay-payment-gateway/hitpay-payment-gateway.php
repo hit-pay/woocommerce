@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.2.4
+Version: 3.2.5
 Requires at least: 4.0
-Tested up to: 6.0.1
+Tested up to: 6.1.1
 WC requires at least: 2.4
-WC tested up to: 6.7.0
+WC tested up to: 7.4.1
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
+define('HITPAY_VERSION', '3.2.5');
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -166,20 +167,47 @@ function woocommerce_hitpay_init() {
         
         public function custom_payment_gateway_icons( $icon, $gateway_id ){
             $icons = $this->getPaymentIcons();
-            foreach( WC()->payment_gateways->get_available_payment_gateways() as $gateway ) {
-                if( $gateway->id == $gateway_id ){
-                    $title = $gateway->get_title();
-                    break;
-                }
-            }
             
             if($gateway_id == 'hitpay') {
                 $icon = '';
+                ?><div class="form-row hitpay-payment-gateway-form"><?php
                 if ($this->payments) {
+                    $pngs = array(
+                        'pesonet',
+                        'eftpos',
+                        'doku',
+                        'philtrustbank',
+                        'allbank',
+                        'aub',
+                        'chinabank',
+                        'instapay',
+                        'landbank',
+                        'metrobank',
+                        'pnb',
+                        'queenbank',
+                        'ussc',
+                        'bayad',
+                        'cebuanalhuillier',
+                        'psbank',
+                        'robinsonsbank'
+                    );
                     foreach ($this->payments as $payment) {
-                        $icon .= ' <img src="' . HITPAY_PLUGIN_URL . 'assets/images/'.$payment.'.svg" alt="' . esc_attr( $icons[$payment] ) . '"  title="' . esc_attr( $icons[$payment] ) . '" />';
+                        $extn = 'svg';
+                        if (in_array($payment, $pngs)) {
+                            $extn = 'png';
+                        }
+                        ?>
+                        <div class="payment-labels-container">
+                            <div class="payment-labels hitpay-<?php echo $payment?>">
+                                <label class="hitpay-<?php echo $payment?>">
+                                    <img src="<?php echo HITPAY_PLUGIN_URL. '/assets/images/'.$payment.'.'.$extn; ?>" alt="<?php echo esc_attr( $icons[$payment] )?>">
+                                </label>
+                            </div>
+                        </div>
+                        <?php
                     }
                 }
+                ?></div><?php
             }
             
             return $icon;
@@ -237,7 +265,8 @@ function woocommerce_hitpay_init() {
                     'type' => 'multiselect',
                     'description' => __('Activate payment methods in the HitPay dashboard under Settings > Payment Gateway > Integrations.', $this->domain),
                     'css' => 'height: 10rem;',
-                    'options' => $this->getPaymentIcons()
+                    'options' => $this->getPaymentIcons(),
+                    'class' => 'wc-enhanced-select',
                 ),
                 'order_status' => array(
                     'title' => __('Order Status', $this->domain),
@@ -397,6 +426,10 @@ function woocommerce_hitpay_init() {
                         } else {
                             jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
                         }
+                    });
+                    
+                    jQuery('#woocommerce_hitpay_payments').select2({
+                        maximumSelectionLength: 10,
                     });
                 });
             </script>  
@@ -944,17 +977,6 @@ function woocommerce_hitpay_init() {
             return $path;
         }
         
-        public function getPaymentMethods()
-        {
-            $methods = [
-                'paynow_online' => __('PayNow QR', $this->domain),
-                'card' => __('Credit cards', $this->domain),
-                'wechat' => __('WeChatPay and AliPay', $this->domain)
-            ];
-            
-            return $methods;
-        }
-        
         public function getPaymentIcons()
         {
             $methods = [
@@ -970,6 +992,53 @@ function woocommerce_hitpay_init() {
                 'shopeepay'        => __( 'ShopeePay', $this->domain ),
                 'fpx'        => __( 'FPX', $this->domain ),
                 'zip'        => __( 'Zip', $this->domain ),
+                'atomeplus' => __('ATome+'),
+                'unionbank' => __('Unionbank Online'),
+                'qrph' => __('Instapay QR PH'),
+                'pesonet' => __('PESONet'),
+                'billease' => __('Billease BNPL'),
+                'gcash' => __('GCash'),
+                'eftpos' => __('eftpos'),
+                'maestro' => __('maestro'),
+                'alfamart' => __('Alfamart'),
+                'indomaret' => __('Indomaret'),
+                'dana' => __('DANA'),
+                'gopay' => __('gopay'),
+                'linkaja' => __('Link Aja!'),
+                'ovo' => __('OVO'),
+                'qris' => __('QRIS'),
+                'danamononline' => __('Bank Danamon'),
+                'permata' => __('PermataBank'),
+                'bsi' => __('Bank Syariah Indonesia'),
+                'bca' => __('BCA'),
+                'bni' => __('BNI'),
+                'bri' => __('BRI'),
+                'cimb' => __('CIMB Niaga'),
+                'doku' => __('DOKU'),
+                'mandiri' => __('Mandiri'),
+                'akulaku' => __('Akulaku BNPL'),
+                'kredivo' => __('Kredivo BNPL'),
+                'philtrustbank' => __('PHILTRUST BANK'),
+                'allbank' => __('AllBank'),
+                'aub' => __('ASIA UNITED BANK'),
+                'chinabank' => __('CHINABANK'),
+                'instapay' => __('instaPay'),
+                'landbank' => __('LANDBANK'),
+                'metrobank' => __('Metrobank'),
+                'pnb' => __('PNB'),
+                'queenbank' => __('QUEENBANK'),
+                'rcbc' => __('RCBC'),
+                'tayocash' => __('TayoCash'),
+                'ussc' => __('USSC'),
+                'bayad' => __('bayad'),
+                'cebuanalhuillier' => __('CEBUANA LHUILLIER'),
+                'ecpay' => __('ecPay'),
+                'palawan' => __('PALAWAN PAWNSHOP'),
+                'bpi' => __('BPI'),
+                'psbank' => __('PSBank'),
+                'robinsonsbank' => __('Robinsons Bank'),
+                'diners_club' => __('Diners Club'),
+                'discover' => __('Discover'),
             ];
             
             return $methods;
@@ -1020,4 +1089,12 @@ function enable_hitpay_gateway( $available_gateways ) {
         }
     } 
     return $available_gateways;
+}
+
+add_action('wp_enqueue_scripts',  'hitpay_load_front_styles');
+function hitpay_load_front_styles() {
+    
+    if ( is_checkout() ) {         
+        wp_enqueue_style( 'hitpay-css', HITPAY_PLUGIN_URL.'/assets/css/front.css', array(),HITPAY_VERSION,'all' );
+    }       
 }
