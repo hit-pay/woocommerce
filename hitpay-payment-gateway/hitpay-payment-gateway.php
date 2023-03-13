@@ -189,7 +189,10 @@ function woocommerce_hitpay_init() {
                         'bayad',
                         'cebuanalhuillier',
                         'psbank',
-                        'robinsonsbank'
+                        'robinsonsbank',
+                        'doku_wallet',
+                        'favepay',
+                        'shopback_paylater'
                     );
                     foreach ($this->payments as $payment) {
                         $extn = 'svg';
@@ -1016,7 +1019,7 @@ function woocommerce_hitpay_init() {
                 'cimb' => __('CIMB Niaga'),
                 'doku' => __('DOKU'),
                 'mandiri' => __('Mandiri'),
-                'akulaku' => __('Akulaku BNPL'),
+                'akulaku' => __('AkuLaku BNPL'),
                 'kredivo' => __('Kredivo BNPL'),
                 'philtrustbank' => __('PHILTRUST BANK'),
                 'allbank' => __('AllBank'),
@@ -1039,6 +1042,10 @@ function woocommerce_hitpay_init() {
                 'robinsonsbank' => __('Robinsons Bank'),
                 'diners_club' => __('Diners Club'),
                 'discover' => __('Discover'),
+                'doku_wallet' => __('DOKU Wallet'),
+                'grab_paylater' => __('PayLater by Grab'),
+                'favepay' => __('FavePay'),
+                'shopback_paylater' => __('ShopBack PayLater'),
             ];
             
             return $methods;
