@@ -79,3 +79,7 @@ body.theme-storefront.right-sidebar .hitpay-payment-gateway-form .payment-labels
         padding: 5px 0;
     }
 }
+.hitpay-payment-selection label{
+    float: left;
+    padding-right: 10px;
+}
