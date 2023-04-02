@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 3.2.5
+Version: 4.0.0
 Requires at least: 4.0
-Tested up to: 6.1.1
+Tested up to: 6.2.1
 WC requires at least: 2.4
-WC tested up to: 7.4.1
+WC tested up to: 7.5.1
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-define('HITPAY_VERSION', '3.2.5');
+define('HITPAY_VERSION', '4.0.0');
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -59,7 +59,7 @@ function woocommerce_hitpay_init() {
 
             $this->id = 'hitpay';
             $this->icon = HITPAY_PLUGIN_URL . 'assets/images/logo.png';
-            $this->has_fields = false;
+            $this->has_fields = true;
             $this->method_title = __('HitPay Payment Gateway', $this->domain);
 
             // Define user set variables
@@ -73,6 +73,8 @@ function woocommerce_hitpay_init() {
             $this->order_status = $this->get_option('order_status');
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
+            $this->enabled_pos_payments = $this->get_option('enabled_pos_payments');
+            $this->terminal_id = $this->get_option('terminal_id');
             
             if (!$this->option_exists("woocommerce_hitpay_customize")) {
                 $this->customize = 1;
@@ -297,6 +299,17 @@ function woocommerce_hitpay_init() {
                     'description' => __('Minimum value is 5. Maximum is 1000', $this->domain),
                     'default' => '5',
                 ),
+                'enabled_pos_payments' => array(
+                    'title' => __('Enable POS Payments?', $this->domain),
+                    'type' => 'checkbox',
+                    'label' => __(' ', $this->domain),
+                    'default' => 'no'
+                ),
+                'terminal_id' => array(
+                    'title' => __('Terminal ID', $this->domain),
+                    'type' => 'text',
+                    'description' => __('Enter your POS Terminal ID', $this->domain),
+                ),
             );
 
             $this->form_fields = $field_arr;
@@ -325,6 +338,13 @@ function woocommerce_hitpay_init() {
                     } elseif ($post_data['woocommerce_hitpay_expires_after'] > 1000) {
                         $noerror = false;
                         WC_Admin_Settings::add_error(__('Expiry after maximum mins should be 1000', $this->domain));
+                    }
+                }
+                
+                if ($noerror && isset($post_data['woocommerce_hitpay_enabled_pos_payments'])) {
+                    if (empty($post_data['woocommerce_hitpay_terminal_id'])) {
+                        $noerror = false;
+                        WC_Admin_Settings::add_error(__('Please enter POS Terminal ID', $this->domain));
                     }
                 }
                 
@@ -423,11 +443,25 @@ function woocommerce_hitpay_init() {
                         jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
                     }
                     
+                    if (jQuery('#woocommerce_hitpay_enabled_pos_payments').is(':checked')) {
+                        jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().show();
+                    } else {
+                        jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().hide();
+                    }
+                    
                     jQuery('#woocommerce_hitpay_expires_after_status').click(function(){
                         if (jQuery('#woocommerce_hitpay_expires_after_status').is(':checked')) {
                             jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().show();
                         } else {
                             jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
+                        }
+                    });
+                    
+                    jQuery('#woocommerce_hitpay_enabled_pos_payments').click(function(){
+                        if (jQuery('#woocommerce_hitpay_enabled_pos_payments').is(':checked')) {
+                            jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().show();
+                        } else {
+                            jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().hide();
                         }
                     });
                     
@@ -450,7 +484,9 @@ function woocommerce_hitpay_init() {
         { 
             ?>
             <div class="form-row form-row-wide">
+                <?php if (!empty($this->description)) {?>
                 <p><?php echo $this->description; ?></p>
+                <?php } ?>
                 <?php
                    if (isset( $_REQUEST['cancelled'] ) )  {
                 ?>
@@ -462,6 +498,30 @@ function woocommerce_hitpay_init() {
                 </script>
                 <?php
                    }
+                ?>
+                <?php
+                if ($this->enabled_pos_payments == 'yes') {
+                ?>
+                <div class="hitpay-payment-selection">
+                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio" for="hitpay_payment_option-1">
+                        <input id="hitpay_payment_option-1"
+                               class="woocommerce-form__input woocommerce-form__input-radio input-radio"
+                               type="radio"
+                               name="hitpay_payment_option" 
+                               value="onlinepayment" checked="checked"> 
+                        <p style="display: inline">Online Payments</p>
+                    </label>
+                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio"  for="hitpay_payment_option-2">
+                        <input id="hitpay_payment_option-2"
+                               class="woocommerce-form__input woocommerce-form__input-radio input-radio"
+                               type="radio"
+                               name="hitpay_payment_option" 
+                               value="cardreader"> 
+                        <p style="display: inline">Card Reader</p>
+                    </label>
+                </div>
+                 <?php
+                }
                 ?>
             </div>
             <?php
@@ -932,6 +992,13 @@ function woocommerce_hitpay_init() {
                         $this->expires_after = '6';
                     }
                      $create_payment_request->setExpiresAfter($this->expires_after.' mins');
+                }
+                
+                if ($this->enabled_pos_payments == 'yes') {
+                    if (isset($_POST['hitpay_payment_option']) && ($_POST['hitpay_payment_option'] == 'cardreader')) {
+                        $create_payment_request->setPaymentMethod('wifi_card_reader');
+                        $create_payment_request->setWifiTerminalId($this->terminal_id);
+                    }
                 }
                 
                 $this->log('Request:');
