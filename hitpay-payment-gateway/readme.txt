@@ -3,7 +3,7 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 6.2.1
-Stable tag: 4.0.0
+Stable tag: 4.0.1
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 7.5.1
@@ -163,3 +163,7 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 - Payment method selection UI changed
 - Plugin tested on WordPress 6.2.1
 - Plugin tested on WooCommerce 7.5.1
+
+= 4.0.1 =
+- For POS payments, new tab is added, where merchant can add upto 5 terminal ids with cashier email id field
+- Payment method selection UI changed for POS Card reader terminal selection
