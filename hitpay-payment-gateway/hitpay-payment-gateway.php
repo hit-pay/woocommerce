@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 4.0.0
+Version: 4.0.1
 Requires at least: 4.0
 Tested up to: 6.2.1
 WC requires at least: 2.4
@@ -73,8 +73,6 @@ function woocommerce_hitpay_init() {
             $this->order_status = $this->get_option('order_status');
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
-            $this->enabled_pos_payments = $this->get_option('enabled_pos_payments');
-            $this->terminal_id = $this->get_option('terminal_id');
             
             if (!$this->option_exists("woocommerce_hitpay_customize")) {
                 $this->customize = 1;
@@ -87,6 +85,31 @@ function woocommerce_hitpay_init() {
             } else {
                 $this->style = get_option('woocommerce_hitpay_style');
             }
+            
+            $this->enable_pos = get_option('woocommerce_hitpay_enable_pos');
+            
+            if (!$this->option_exists("woocommerce_hitpay_terminal_ids")) {
+                $this->terminal_ids = array();
+            } else {
+                $this->terminal_ids = get_option('woocommerce_hitpay_terminal_ids');
+                if (!empty($this->terminal_ids)) {
+                    $this->terminal_ids = json_decode($this->terminal_ids, true);
+                } else {
+                    $this->terminal_ids = array();
+                }
+            }
+            
+            if (!$this->option_exists("woocommerce_hitpay_cashier_emails")) {
+                $this->cashier_emails = array();
+            } else {
+                $this->cashier_emails = get_option('woocommerce_hitpay_cashier_emails');
+                if (!empty($this->cashier_emails)) {
+                    $this->cashier_emails = json_decode($this->cashier_emails, true);
+                } else {
+                    $this->cashier_emails = array();
+                }
+            }
+            
             
 	    // Load the settings.
             $this->init_form_fields();
@@ -299,17 +322,6 @@ function woocommerce_hitpay_init() {
                     'description' => __('Minimum value is 5. Maximum is 1000', $this->domain),
                     'default' => '5',
                 ),
-                'enabled_pos_payments' => array(
-                    'title' => __('Enable POS Payments?', $this->domain),
-                    'type' => 'checkbox',
-                    'label' => __(' ', $this->domain),
-                    'default' => 'no'
-                ),
-                'terminal_id' => array(
-                    'title' => __('Terminal ID', $this->domain),
-                    'type' => 'text',
-                    'description' => __('Enter your POS Terminal ID', $this->domain),
-                ),
             );
 
             $this->form_fields = $field_arr;
@@ -341,13 +353,6 @@ function woocommerce_hitpay_init() {
                     }
                 }
                 
-                if ($noerror && isset($post_data['woocommerce_hitpay_enabled_pos_payments'])) {
-                    if (empty($post_data['woocommerce_hitpay_terminal_id'])) {
-                        $noerror = false;
-                        WC_Admin_Settings::add_error(__('Please enter POS Terminal ID', $this->domain));
-                    }
-                }
-                
                 if ($noerror) {
                     foreach ( $this->get_form_fields() as $key => $field ) {
                         $setting_value = $this->get_field_value( $key, $field, $post_data );
@@ -366,6 +371,48 @@ function woocommerce_hitpay_init() {
                     $this->customize = get_option('woocommerce_hitpay_customize');
                     $this->style = get_option('woocommerce_hitpay_style');
                     
+                    if (isset($post_data['woocommerce_hitpay_enable_pos'])) {
+                        update_option('woocommerce_hitpay_enable_pos', 1);
+                    } else {
+                        update_option('woocommerce_hitpay_enable_pos', 0);
+                    }
+                    $this->enable_pos = get_option('woocommerce_hitpay_enable_pos');
+                    
+                    if ($this->enable_pos) {
+                        if (isset($post_data['woocommerce_hitpay_terminal_ids'])) {
+                            $terminal_ids = $post_data['woocommerce_hitpay_terminal_ids'];
+                            $cashier_emails = $post_data['woocommerce_hitpay_cashier_emails'];
+                            
+                            $terminal_ids_sanitized = array();
+                            $cashier_emails_sanitized = array();
+                            foreach ($terminal_ids as $key => $val) {
+                                if (!empty($val)) {
+                                    $terminal_ids_sanitized[] = sanitize_text_field($val);
+                                    $cashier_emails_sanitized[] = sanitize_text_field($cashier_emails[$key]);
+                                }
+                            }
+                            $this->terminal_ids = $terminal_ids_sanitized;
+                            $this->cashier_emails = $cashier_emails_sanitized;
+                            if (count($terminal_ids_sanitized) > 0) {
+                                update_option('woocommerce_hitpay_terminal_ids', json_encode($terminal_ids_sanitized));
+                                update_option('woocommerce_hitpay_cashier_emails', json_encode($cashier_emails_sanitized));
+                            } else {
+                                delete_option('woocommerce_hitpay_terminal_ids');
+                                delete_option('woocommerce_hitpay_cashier_emails');
+                            }
+                         } else {
+                            delete_option('woocommerce_hitpay_terminal_ids');
+                            delete_option('woocommerce_hitpay_cashier_emails');
+                            $this->terminal_ids = array();
+                            $this->cashier_emails = array();
+                        }
+                    } else {
+                        delete_option('woocommerce_hitpay_terminal_ids');
+                        delete_option('woocommerce_hitpay_cashier_emails');
+                        $this->terminal_ids = array();
+                        $this->cashier_emails = array();
+                    }
+                    
                     return update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ) );
                 }
             }
@@ -382,7 +429,8 @@ function woocommerce_hitpay_init() {
             ?>
             <nav id="hitpay-tabs" class="nav-tab-wrapper" style="display: none">
                 <a id="hitpay-setting-tab" href="?page=wc-settings&section=hitpay&tab=checkout&hitpaytab=settings" class="nav-tab <?php echo (($hitpaytab == 'settings') ? 'nav-tab-active':'')?>">Settings</a>
-                <a id="hitpay-customize-tab"href="?page=wc-settings&section=hitpay&hitpaytab=customize&tab=checkout" class="nav-tab <?php echo (($hitpaytab != 'settings') ? 'nav-tab-active':'')?>">Customization</a>
+                <a id="hitpay-customize-tab" href="?page=wc-settings&section=hitpay&hitpaytab=customize&tab=checkout" class="nav-tab <?php echo (($hitpaytab == 'customize') ? 'nav-tab-active':'')?>">Customization</a>
+                <a id="hitpay-pos-settings-tab" href="?page=wc-settings&section=hitpay&hitpaytab=pos-settings&tab=checkout" class="nav-tab <?php echo (($hitpaytab == 'pos-settings') ? 'nav-tab-active':'')?>">POS Payments</a>
             </nav>
             <div class="tab-content" id="hitpay-tab-content-customize" style="display: none">
                 <table class="form-table">
@@ -423,30 +471,127 @@ function woocommerce_hitpay_init() {
                     </tbody>
                 </table>
             </div>
+            <div class="tab-content" id="hitpay-tab-content-pos-settings" style="display: none">
+                <table class="form-table">
+                    <tbody>
+                        <tr valign="top">
+                            <th scope="row" class="titledesc">
+                                <label for="woocommerce_hitpay_enable_pos">Enable POS Payments</label>
+                            </th>
+                            <td class="forminp">
+                                <fieldset>
+                                    <legend class="screen-reader-text"><span>Enable POS Payments</span></legend>
+                                    <label for="woocommerce_hitpay_enable_pos">
+                                        <input class="" type="checkbox" name="woocommerce_hitpay_enable_pos" id="woocommerce_hitpay_enable_pos" style="" value="1" 
+                                            <?php echo $this->enable_pos ? 'checked="checked"':''?> >
+                                    </label>
+                                </fieldset>
+                            </td>
+                        </tr>
+			<tr valign="top">
+                            <td class="forminp" colspan="2" id="terminal_id_settings">
+                                <div>Enter Terminal Reader Information:</div>
+                                <div class="field_wrapper">
+                                    <?php 
+                                    if (count($this->terminal_ids) > 0) {
+                                        $i = 0;
+                                        foreach($this->terminal_ids as $key => $val) {
+                                            $i++;
+                                    ?>
+                                    <table style="border-bottom: 1px solid #ccc; margin-bottom: 10px" <?php if ($i > 1) {?>class="dynamic-field-table"<?php } ?>>
+                                        <tr valign="top">
+                                            <th scope="row" class="titledesc">
+                                                <label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label>
+                                            </th>
+                                            <td class="forminp">
+                                                <input type="text" name="woocommerce_hitpay_terminal_ids[]" value="<?php echo $val?>"/>
+                                            </td>
+                                            <td>
+                                                <?php if ($i > 1) {?>
+                                                <a href="javascript:void(0);" class="btn button-secondary remove_button" title="Remove field">Remove</a>
+                                                <?php } else { ?>
+                                                &nbsp;
+                                                <?php } ?>
+                                            </td>
+                                        </tr>
+                                        <tr valign="top">
+                                            <th scope="row" class="titledesc">
+                                                <label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label>
+                                            </th>
+                                            <td class="forminp">
+                                                <input type="email" name="woocommerce_hitpay_cashier_emails[]" value="<?php echo (isset($this->cashier_emails[$key]) ? $this->cashier_emails[$key] : '') ?>"/>
+                                            </td>
+                                            <td>&nbsp;</td>
+                                        </tr>
+                                    </table>
+                                    <?php 
+                                        }
+                                    } else {
+                                    ?>
+                                    <table style="border-bottom: 1px solid #ccc; margin-bottom: 10px">
+                                        <tr valign="top">
+                                            <th scope="row" class="titledesc">
+                                                <label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label>
+                                            </th>
+                                            <td class="forminp">
+                                                <input type="text" name="woocommerce_hitpay_terminal_ids[]" value=""/>
+                                            </td>
+                                            <td>
+                                                  &nbsp;
+                                             </td>
+                                        </tr>
+                                        <tr valign="top">
+                                            <th scope="row" class="titledesc">
+                                                <label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label>
+                                            </th>
+                                            <td class="forminp">
+                                                <input type="text" name="woocommerce_hitpay_cashier_emails[]" value=""/>
+                                            </td>
+                                            <td>&nbsp;</td>
+                                        </tr>
+                                    </table>
+                                    <?php
+                                    }
+                                    ?>
+                                </div>
+                                <div>
+                                    <a href="javascript:void(0);" class="btn button-secondary add_button" title="Add field">Add New</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             <script type="text/javascript">
                 var hitpaytab = '<?php echo $hitpaytab?>';
                 jQuery(document).ready(function(){
+                    var maxField = 5;
+                    var addButton = jQuery('.add_button');
+                    var wrapper = jQuery('.field_wrapper');
+                    var fieldHTML = '<table class="dynamic-field-table" style="border-bottom: 1px solid #ccc; margin-bottom: 10px"><tr valign="top"><th scope="row" class="titledesc"><label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label></th><td class="forminp"><input type="text" name="woocommerce_hitpay_terminal_ids[]" value=""/></td><td><a href="javascript:void(0);" class="btn button-secondary remove_button" title="Remove field">Remove</a></td></tr><tr valign="top"><th scope="row" class="titledesc"><label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label></th><td class="forminp"><input type="text" name="woocommerce_hitpay_cashier_emails[]" value=""/></td></tr></table>';
+                    var x = parseInt('<?php echo (count($this->terminal_ids) == 0) ? 1 : count($this->terminal_ids)?>');
+                    
                     jQuery('.wc-admin-breadcrumb').parent().after(jQuery('#hitpay-tabs'));
                     jQuery('#hitpay-tabs').after(jQuery('#hitpay-tab-content-customize'));
+                    jQuery('#hitpay-tab-content-customize').after(jQuery('#hitpay-tab-content-pos-settings'));
                     jQuery('#hitpay-tabs').show();
                     if (hitpaytab == 'settings') {
                         jQuery('#woocommerce_hitpay_enabled').closest('.form-table').show();
                         jQuery('#hitpay-tab-content-customize').hide();
-                    } else {
+                        jQuery('#hitpay-tab-content-pos-settings').hide();
+                    } else if (hitpaytab == 'customize') {
                         jQuery('#woocommerce_hitpay_enabled').closest('.form-table').hide();
                         jQuery('#hitpay-tab-content-customize').show();
-                    }
+                    } else if (hitpaytab == 'pos-settings') {
+                        jQuery('#woocommerce_hitpay_enabled').closest('.form-table').hide();
+                        jQuery('#hitpay-tab-content-customize').hide();
+                        jQuery('#hitpay-tab-content-pos-settings').show();
+                    } 
                     
                     if (jQuery('#woocommerce_hitpay_expires_after_status').is(':checked')) {
                         jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().show();
                     } else {
                         jQuery('#woocommerce_hitpay_expires_after').parent().parent().parent().hide();
-                    }
-                    
-                    if (jQuery('#woocommerce_hitpay_enabled_pos_payments').is(':checked')) {
-                        jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().show();
-                    } else {
-                        jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().hide();
                     }
                     
                     jQuery('#woocommerce_hitpay_expires_after_status').click(function(){
@@ -457,16 +602,37 @@ function woocommerce_hitpay_init() {
                         }
                     });
                     
-                    jQuery('#woocommerce_hitpay_enabled_pos_payments').click(function(){
-                        if (jQuery('#woocommerce_hitpay_enabled_pos_payments').is(':checked')) {
-                            jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().show();
+                    jQuery('#woocommerce_hitpay_payments').select2({
+                        maximumSelectionLength: 10,
+                    });
+                    
+                    if (jQuery('#woocommerce_hitpay_enable_pos').is(':checked')) {
+                        jQuery('#terminal_id_settings').show();
+                    } else {
+                        jQuery('#terminal_id_settings').hide();
+                    }
+                    
+                    jQuery('#woocommerce_hitpay_enable_pos').click(function(){
+                        if (jQuery('#woocommerce_hitpay_enable_pos').is(':checked')) {
+                            jQuery('#terminal_id_settings').show();
                         } else {
-                            jQuery('#woocommerce_hitpay_terminal_id').parent().parent().parent().hide();
+                            jQuery('#terminal_id_settings').hide();
                         }
                     });
                     
-                    jQuery('#woocommerce_hitpay_payments').select2({
-                        maximumSelectionLength: 10,
+                    jQuery(addButton).click(function(){
+                        if(x < maxField){ 
+                            x++;
+                            jQuery(wrapper).append(fieldHTML);
+                        } else {
+                            alert('Allowed to add maximum: '+maxField);
+                        }
+                    });
+
+                    jQuery(wrapper).on('click', '.remove_button', function(e){
+                        e.preventDefault();
+                        jQuery(this).parents('.dynamic-field-table').remove();
+                        x--; 
                     });
                 });
             </script>  
@@ -500,31 +666,72 @@ function woocommerce_hitpay_init() {
                    }
                 ?>
                 <?php
-                if ($this->enabled_pos_payments == 'yes') {
+                if ($this->enable_pos && count($this->terminal_ids) > 0) {
+                    $filter_terminal_ids = $this->filterTerminalIds();
                 ?>
                 <div class="hitpay-payment-selection">
-                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio" for="hitpay_payment_option-1">
-                        <input id="hitpay_payment_option-1"
+                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio" for="hitpay_payment_option-0" <?php if (count($filter_terminal_ids) == 1) {?>style="float:left"<?php }?>>
+                        <input id="hitpay_payment_option-0"
                                class="woocommerce-form__input woocommerce-form__input-radio input-radio"
                                type="radio"
                                name="hitpay_payment_option" 
                                value="onlinepayment" checked="checked"> 
                         <p style="display: inline">Online Payments</p>
                     </label>
-                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio"  for="hitpay_payment_option-2">
-                        <input id="hitpay_payment_option-2"
+                    
+                    <?php if (count($filter_terminal_ids) == 1) {?>
+                    <label class="woocommerce-form__label woocommerce-form__label-for-radio radio"  for="hitpay_payment_option-1">
+                        <input id="hitpay_payment_option-1"
                                class="woocommerce-form__input woocommerce-form__input-radio input-radio"
                                type="radio"
                                name="hitpay_payment_option" 
-                               value="cardreader"> 
+                               value="<?php echo $filter_terminal_ids[0]?>"> 
                         <p style="display: inline">Card Reader</p>
                     </label>
+                    <?php 
+                        } else {
+                            foreach ($filter_terminal_ids as $key => $val) {
+                    ?>
+                            <label class="woocommerce-form__label woocommerce-form__label-for-radio radio"  for="hitpay_payment_option-<?php echo ($key+2)?>">
+                                <input id="hitpay_payment_option-<?php echo ($key+2)?>"
+                                       class="woocommerce-form__input woocommerce-form__input-radio input-radio"
+                                       type="radio"
+                                       name="hitpay_payment_option" 
+                                       value="<?php echo $val?>"> 
+                                <p style="display: inline">Card Reader - Terminal ID: <?php echo $val?></p>
+                            </label>
+                    <?php
+                            }
+                        }
+                    ?>
                 </div>
                  <?php
                 }
                 ?>
             </div>
             <?php
+        }
+        
+        public function filterTerminalIds()
+        {
+            $filtered_terminal_ids = array();
+            $user = wp_get_current_user();
+            $email = $user->user_email;
+            
+            if (!empty($email)) {
+                $i = 0;
+                foreach ($this->terminal_ids as $key => $val) {
+                    $cashier_email = $this->cashier_emails[$key];
+                    if ($email == $cashier_email) {
+                        $filtered_terminal_ids[$i++] = $val;
+                    }
+                }
+            }
+            
+            if (count($filtered_terminal_ids) == 0) {
+                $filtered_terminal_ids = array_values($this->terminal_ids);
+            }
+            return $filtered_terminal_ids;
         }
 
         /**
@@ -994,10 +1201,11 @@ function woocommerce_hitpay_init() {
                      $create_payment_request->setExpiresAfter($this->expires_after.' mins');
                 }
                 
-                if ($this->enabled_pos_payments == 'yes') {
-                    if (isset($_POST['hitpay_payment_option']) && ($_POST['hitpay_payment_option'] == 'cardreader')) {
+                if ($this->enable_pos && count($this->terminal_ids) > 0) {
+                    if (isset($_POST['hitpay_payment_option']) && ($_POST['hitpay_payment_option'] != 'onlinepayment')) {
+                        $terminal_id = sanitize_text_field($_POST['hitpay_payment_option']);
                         $create_payment_request->setPaymentMethod('wifi_card_reader');
-                        $create_payment_request->setWifiTerminalId($this->terminal_id);
+                        $create_payment_request->setWifiTerminalId($terminal_id);
                     }
                 }
                 
