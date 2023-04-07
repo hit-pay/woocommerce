@@ -1,5 +1,4 @@
 .hitpay-payment-gateway-form .payment-labels-container {
-    /*width: 50%;*/
     padding: 5px 5px;
     box-sizing: border-box;
 }
@@ -63,20 +62,9 @@ body.theme-storefront.right-sidebar .hitpay-payment-gateway-form .payment-labels
     font-size: 13px;
 }
 
-@media (max-width: 1100px) {
-    .hitpay-payment-gateway-form .payment-labels-container {
-        width: 100%;
-    }
-}
-@media (max-width: 767px) {
-    .hitpay-payment-gateway-form .payment-labels-container {
-        width: 50%;
-    }
-}
-@media (max-width: 500px) {
-    .hitpay-payment-gateway-form .payment-labels-container {
-        width: 100%;
-        padding: 5px 0;
+@media (max-width: 900px) {
+    .hitpay-payment-selection label {
+        float: none !important;
     }
 }
 .hitpay-payment-selection label{
