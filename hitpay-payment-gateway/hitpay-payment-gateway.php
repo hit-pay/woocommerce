@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 4.0.2
+Version: 4.0.3
 Requires at least: 4.0
 Tested up to: 6.2.1
 WC requires at least: 2.4
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-define('HITPAY_VERSION', '4.0.2');
+define('HITPAY_VERSION', '4.0.3');
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -73,6 +73,7 @@ function woocommerce_hitpay_init() {
             $this->order_status = $this->get_option('order_status');
             $this->expires_after_status = $this->get_option('expires_after_status');
             $this->expires_after = $this->get_option('expires_after');
+            $this->drop_in = $this->get_option('drop_in');
             
             if (!$this->option_exists("woocommerce_hitpay_customize")) {
                 $this->customize = 1;
@@ -122,6 +123,21 @@ function woocommerce_hitpay_init() {
             add_filter('woocommerce_gateway_icon', array($this, 'custom_payment_gateway_icons'), 10, 2 );
             add_action('woocommerce_admin_order_totals_after_total', array($this, 'admin_order_totals'), 10, 1);
             add_action('admin_footer', array( $this, 'hitpay_admin_footer'), 10, 3 );
+            add_action('wp_enqueue_scripts',  array( $this, 'hitpay_load_front_assets') );
+        }
+        
+        public function hitpay_load_front_assets() {
+            if ( is_checkout() ) {         
+                wp_enqueue_style( 'hitpay-css', HITPAY_PLUGIN_URL.'/assets/css/front.css', array(),HITPAY_VERSION,'all' );
+                if ($this->drop_in == 'yes') {
+                    $dropin_js = 'https://sandbox.hit-pay.com/hitpay.js';
+                    if ($this->mode == 'yes') {
+                        $dropin_js = 'https://hit-pay.com/hitpay.js';
+                    }
+                    wp_enqueue_script( 'hitpay_js', $dropin_js );
+                    wp_enqueue_script( 'hitpay_dropin_js', HITPAY_PLUGIN_URL.'/assets/js/dropin.js' );
+                }
+            }  
         }
         
         public function admin_order_totals( $order_id ){
@@ -191,12 +207,21 @@ function woocommerce_hitpay_init() {
         }
         
         public function custom_payment_gateway_icons( $icon, $gateway_id ){
+            global $wp;
             $icons = $this->getPaymentIcons();
             
-            if($gateway_id == 'hitpay') {
+            $customiseIcon = true;
+            if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'wc_pos_payload') {
+                $customiseIcon = false;
+            }
+            
+            if($customiseIcon && $gateway_id == 'hitpay') {
                 $icon = '';
-                ?><div class="form-row hitpay-payment-gateway-form"><?php
+                ?><?php
                 if ($this->payments) {
+                ?>
+                    <div class="form-row hitpay-payment-gateway-form">
+                <?php      
                     $pngs = array(
                         'pesonet',
                         'eftpos',
@@ -234,8 +259,11 @@ function woocommerce_hitpay_init() {
                         </div>
                         <?php
                     }
+                ?>
+                    </div>
+                <?php        
                 }
-                ?></div><?php
+                ?><?php
             }
             
             return $icon;
@@ -287,6 +315,13 @@ function woocommerce_hitpay_init() {
                     'type' => 'text',
                     'description' => __('(Copy/Paste values from HitPay Dashboard under Payment Gateway > API Keys)', $this->domain),
                     'default' => '',
+                ),
+                'drop_in' => array(
+                    'title' => __('Checkout UI Option', $this->domain),
+                    'type' => 'checkbox',
+                    'label' => __('Enable Drop-In (Popup)', $this->domain),
+                    'default' => 'no',
+                    'description'=> __( 'The drop-in is embedded into your webpage so your customer will never have to leave your site.', $this->domain).' <br/>'.__('Redirect: Navigate your user to the hitpay checkout url, and hitpay will take care of the rest of the flow', $this->domain),
                 ),
                 'payments' => array(
                     'title' => __('Payment Logos', $this->domain),
@@ -708,6 +743,9 @@ function woocommerce_hitpay_init() {
                  <?php
                 }
                 ?>
+                <?php if ($this->drop_in) {?>
+                <div id="hitpay_background_layer"></div>
+                <?php }?>
             </div>
             <?php
         }
@@ -1221,11 +1259,20 @@ function woocommerce_hitpay_init() {
                 $order->add_meta_data('HitPay_payment_id', $result->getId());
                 
                 $order->save_meta_data();
+                
+                $hitpayDomain = 'sandbox.hit-pay.com';
+                if ($this->mode == 'yes') {
+                    $hitpayDomain = 'hit-pay.com';
+                }
 
                 if ($result->getStatus() == 'pending') {
                     return array(
                         'result' => 'success',
-                        'redirect' => $result->getUrl()
+                        'redirect' => $result->getUrl(),
+                        'domain' => $hitpayDomain,
+                        'apiDomain' => $hitpayDomain,
+                        'payment_request_id' => $result->getId(),
+                        'redirect_url' => $redirect_url
                     );
                 } else {
                     throw new Exception(sprintf(__('HitPay: sent status is %s', $this->domain), $result->getStatus()));
@@ -1371,12 +1418,4 @@ function enable_hitpay_gateway( $available_gateways ) {
         }
     } 
     return $available_gateways;
-}
-
-add_action('wp_enqueue_scripts',  'hitpay_load_front_styles');
-function hitpay_load_front_styles() {
-    
-    if ( is_checkout() ) {         
-        wp_enqueue_style( 'hitpay-css', HITPAY_PLUGIN_URL.'/assets/css/front.css', array(),HITPAY_VERSION,'all' );
-    }       
 }
