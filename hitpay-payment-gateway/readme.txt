@@ -3,7 +3,7 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 6.2.1
-Stable tag: 4.0.3
+Stable tag: 4.0.4
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 7.5.1
@@ -175,3 +175,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 = 4.0.3 =
 - Drop-In (POPUP) option included. The drop-in is embedded into your webpage so your customer will never have to leave your site.
 - Fixed bugs to make it compatible with WooCommerce Pos plugin
+
+= 4.0.4 =
+- Fix Log file
