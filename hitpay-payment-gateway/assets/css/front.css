@@ -4,7 +4,7 @@
 }
 
 .hitpay-payment-gateway-form {
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     flex-wrap: wrap;
     margin: 0 -5px;
@@ -43,7 +43,7 @@
 }
 
 .hitpay-payment-gateway-form .payment-labels > label {
-    margin-bottom: 0;
+    margin-bottom: 0 !important;
     display: flex !important;
     align-items: center;
     font-size: 14px;
