@@ -2,7 +2,7 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 4.0.5
+Version: 4.0.6
 Requires at least: 4.0
 Tested up to: 6.2.1
 WC requires at least: 2.4
@@ -954,12 +954,12 @@ function woocommerce_hitpay_init() {
         }
         
         public function return_from_hitpay() {
-            if (!isset($_GET['order_id'])) {
+            if (!isset($_GET['hitpay_order_id'])) {
                 $this->log('return_from_hitpay order_id check failed');
                 exit;
             }
 
-            $order_id = (int)sanitize_text_field($_GET['order_id']);
+            $order_id = (int)sanitize_text_field($_GET['hitpay_order_id']);
             $order = new WC_Order($order_id);
             
             if (isset($_GET['status'])) {
@@ -1178,7 +1178,7 @@ function woocommerce_hitpay_init() {
             global $woocommerce;
             if (isset($_GET['get_order_status'])) {
                 $this->get_payment_staus();
-            } else if (isset($_GET['return'])) {
+            } else if (isset($_GET['hitpayreturn'])) {
                 $this->return_from_hitpay();
             } else {
                 $this->web_hook_handler();
@@ -1216,7 +1216,7 @@ function woocommerce_hitpay_init() {
                 );
 
                 //$redirect_url = $this->get_return_url( $order );
-                $redirect_url = site_url().'/?wc-api=wc_hitpay&return=1&order_id='.$order_id;
+                $redirect_url = site_url().'/?wc-api=wc_hitpay&hitpayreturn=1&hitpay_order_id='.$order_id;
                 $webhook = site_url().'/?wc-api=wc_hitpay&order_id='.$order_id;
                 
                 $create_payment_request = new CreatePayment();

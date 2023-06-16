@@ -5,7 +5,7 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 6.2.1
-Stable tag: 4.0.5
+Stable tag: 4.0.6
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 7.5.1
@@ -200,3 +200,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 4.0.5 =
 - Applied 2 styles to logo display
+
+= 4.0.6 =
+- Return URL query string changed
