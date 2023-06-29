@@ -4,10 +4,12 @@
  * Dummy Payments Blocks integration
  * @author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
  * @package: HitPay Payment Gateway
- * @since: 4.0.7
+ * @since: 4.0.6
 */
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
+use Automattic\WooCommerce\Blocks\Payments\PaymentResult;
+use Automattic\WooCommerce\Blocks\Payments\PaymentContext;
 
 final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
     /**
@@ -23,7 +25,7 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
      * @var string
      */
     protected $name = 'hitpay';
-
+    
     /**
      * Initializes the payment method type.
      */
@@ -90,7 +92,27 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
             'supports'    => array_filter( $this->gateway->supports, [ $this->gateway, 'supports' ] ),
             'logo_url'    => HITPAY_PLUGIN_URL . '/assets/images/logo.png',
             'icons'       => $this->get_icons(),
+            'drop_in_enabled' => $this->isDropInEnabled(),
+            'pos_enabled' => $this->isPosEnabled(),
+            'terminal_ids' => $this->gateway->terminal_ids,
+            'total_terminals' => count($this->gateway->terminal_ids),
         ];
+    }
+    
+    private function isDropInEnabled() {
+        $status = false;
+        if ($this->gateway->drop_in == 'yes') {
+            $status = true;
+        } 
+        return $status;
+    }
+    
+    private function isPosEnabled() {
+        $status = false;
+        if ($this->gateway->enable_pos) {
+            $status = true;
+        } 
+        return $status;
     }
     
     /**
