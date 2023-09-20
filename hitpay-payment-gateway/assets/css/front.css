@@ -86,3 +86,19 @@ body.theme-storefront.right-sidebar .hitpay-payment-gateway-form .payment-labels
     z-index: 3;
     display: none;
 }
+
+.wc-block-components-radio-control-accordion-content .hitpay-payment-selection {
+    padding: 8px;
+    border: 1px solid #eee;
+}
+.wc-block-components-radio-control-accordion-content .hitpay-payment-selection p{
+    position: relative;
+    top: -2px;
+    padding: 5px;
+}
+.hitpay-pos-online-multiple {
+    display: block;
+}
+.hitpay-pos-card-reader-multiple {
+    display: block;
+}
