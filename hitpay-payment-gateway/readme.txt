@@ -190,3 +190,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 4.0.8 =
 - Now it is compatible to block based checkout - Drop-In (Popup) and POS option with Form Build
+
+= 4.0.9 =
+- Webhook order_id param changed since some third party plugin intercept this and prevented the webhook execution
