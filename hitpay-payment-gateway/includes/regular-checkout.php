@@ -962,12 +962,12 @@ class WC_HitPay extends WC_Payment_Gateway {
         $this->log('Post Data:');
         $this->log($_POST);
 
-        if (!isset($_GET['order_id']) || !isset($_POST['hmac'])) {
+        if (!isset($_GET['hitpay_order_id']) || !isset($_POST['hmac'])) {
             $this->log('order_id + hmac check failed');
             exit;
         }
 
-        $order_id = (int)sanitize_text_field($_GET['order_id']);
+        $order_id = (int)sanitize_text_field($_GET['hitpay_order_id']);
 
         if ($order_id > 0) {
             $HitPay_webhook_triggered = (int)get_post_meta( $order_id, 'HitPay_webhook_triggered', true);
@@ -1186,7 +1186,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
             //$redirect_url = $this->get_return_url( $order );
             $redirect_url = site_url().'/?wc-api=wc_hitpay&hitpayreturn=1&hitpay_order_id='.$order_id;
-            $webhook = site_url().'/?wc-api=wc_hitpay&order_id='.$order_id;
+            $webhook = site_url().'/?wc-api=wc_hitpay&hitpay_order_id='.$order_id;
 
             $create_payment_request = new CreatePayment();
             $create_payment_request->setAmount($order_total)
