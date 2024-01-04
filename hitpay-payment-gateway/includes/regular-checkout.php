@@ -108,17 +108,52 @@ class WC_HitPay extends WC_Payment_Gateway {
             }
         }  
     }
+	
+	public function isHPOSEnabled() {
+		$status = false;
+		
+		if ( 
+			class_exists( 'Automattic\WooCommerce\Utilities\OrderUtil' ) && 
+			Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()
+		) {
+			$status = true;
+		}
+		
+		return $status;
+	}
+	
+	public function getOrder($order_id) {
+		if ($this->isHPOSEnabled()) {
+			$order = wc_get_order( $order_id );
+		} else {
+			$order = new WC_Order($order_id);
+		}
+		
+		return $order;
+	}
+	
+	public function getOrderMetaData($order, $order_id, $key, $single) {
+		if ($this->isHPOSEnabled()) {
+			return $order->get_meta( $key, $single );
+		} else {
+			return get_post_meta( $order_id, $key, $single );
+		}
+	}
+	
 
     public function admin_order_totals( $order_id ){
-        $order = new WC_Order($order_id);
+		$order = $this->getOrder($order_id);
+        
         if ($order->get_payment_method() == $this->id) {
             $order_id = $order->get_id();
             $payment_method = '';
-            $payment_request_id = get_post_meta( $order_id, 'HitPay_payment_request_id', true );
+            $payment_request_id = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_request_id', true );
 
             if (!empty($payment_request_id)) {
-                $payment_method = get_post_meta( $order_id, 'HitPay_payment_method', true );
-                $fees = get_post_meta( $order_id, 'HitPay_fees', true );
+				
+                $payment_method = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_method', true );
+				
+                $fees = $this->getOrderMetaData($order, $order_id, 'HitPay_fees', true );
                 if (empty($payment_method) || empty($fees)) {
                     try {
                         $hitpay_client = new Client(
@@ -145,7 +180,7 @@ class WC_HitPay extends WC_Payment_Gateway {
             }
 
             if (!empty($payment_method)) {
-                $HitPay_currency = get_post_meta( $order_id, 'HitPay_currency', true );
+                $HitPay_currency = $this->getOrderMetaData($order, $order_id, 'HitPay_currency', true );
         ?>
                 <table class="wc-order-totals" style="border-top: 1px solid #999; margin-top:12px; padding-top:12px">
                     <tbody>
@@ -746,7 +781,7 @@ class WC_HitPay extends WC_Payment_Gateway {
      */
     public function thankyou_page($order_id) {
         if ($this->customize) {
-            $order = new WC_Order($order_id);
+            $order = $this->getOrder($order_id);
 
             $thankyoupage_ui_enabled = 1;
             $style = $this->style;
@@ -903,8 +938,10 @@ class WC_HitPay extends WC_Payment_Gateway {
             if ($order_id == 0) {
                 throw new \Exception( __('Order not found.', $this->domain));
             }
+			
+			$order = $this->getOrder($order_id);
 
-            $payment_status = get_post_meta( $order_id, 'HitPay_WHS', true );
+            $payment_status = $this->getOrderMetaData($order, $order_id, 'HitPay_WHS', true );
             if ($payment_status && !empty($payment_status)) {
                 $status = $payment_status;
             }
@@ -929,7 +966,7 @@ class WC_HitPay extends WC_Payment_Gateway {
         }
 
         $order_id = (int)sanitize_text_field($_GET['hitpay_order_id']);
-        $order = new WC_Order($order_id);
+        $order = $this->getOrder($order_id);
 
         if (isset($_GET['status'])) {
             $status = sanitize_text_field($_GET['status']);
@@ -968,15 +1005,16 @@ class WC_HitPay extends WC_Payment_Gateway {
         }
 
         $order_id = (int)sanitize_text_field($_GET['hitpay_order_id']);
+		
+		$order = $this->getOrder($order_id);
 
         if ($order_id > 0) {
-            $HitPay_webhook_triggered = (int)get_post_meta( $order_id, 'HitPay_webhook_triggered', true);
+            $HitPay_webhook_triggered = (int)$this->getOrderMetaData($order, $order_id, 'HitPay_webhook_triggered', true);
             if ($HitPay_webhook_triggered == 1) {
                 exit;
             }
         }
-
-        $order = new WC_Order($order_id);
+        
         $order_data = $order->get_data();
 
         $order->add_meta_data('HitPay_webhook_triggered', 1);
@@ -990,13 +1028,13 @@ class WC_HitPay extends WC_Payment_Gateway {
             if (Client::generateSignatureArray($salt, $data) == $_POST['hmac']) {
                 $this->log('hmac check passed');
 
-                $HitPay_payment_id = get_post_meta( $order_id, 'HitPay_payment_id', true );
+                $HitPay_payment_id = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_id', true );
 
                 if (!$HitPay_payment_id || empty($HitPay_payment_id)) {
                     $this->log('saved payment not valid');
                 }
 
-                $HitPay_is_paid = get_post_meta( $order_id, 'HitPay_is_paid', true );
+                $HitPay_is_paid = $this->getOrderMetaData($order, $order_id, 'HitPay_is_paid', true );
 
                 if (!$HitPay_is_paid) {
                     $status = sanitize_text_field($_POST['status']);
@@ -1092,13 +1130,13 @@ class WC_HitPay extends WC_Payment_Gateway {
     }
 
     public function process_refund($orderId, $amount = NULL, $reason = '') {
-        $order = wc_get_order($orderId);
+        $order = $this->getOrder($orderId);
         $amount = (float)strip_tags(trim($amount));
         $amountValue = number_format($amount, 2);
 
         try {
-            $HitPay_transaction_id = get_post_meta( $orderId, 'HitPay_transaction_id', true );
-            $HitPay_is_refunded = get_post_meta( $orderId, 'HitPay_is_refunded', true );
+            $HitPay_transaction_id = $this->getOrderMetaData($order, $orderId, 'HitPay_transaction_id', true );
+            $HitPay_is_refunded = $this->getOrderMetaData($order, $orderId, 'HitPay_is_refunded', true );
             if ($HitPay_is_refunded == 1) {
                 throw new Exception(__('Only one refund allowed per transaction by HitPay Gateway.',  $this->domain));
             }
@@ -1173,7 +1211,7 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function process_payment($order_id) {
         global $woocommerce;
 
-        $order = wc_get_order($order_id);
+        $order = $this->getOrder($order_id);
 
         $order_data = $order->get_data();
         $order_total = $order->get_total();
