@@ -3,10 +3,10 @@ Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
 Tested up to: 6.4.2
-Stable tag: 4.1.0
+Stable tag: 4.1.1
 Requires PHP: 5.5
 WC requires at least: 2.4
-WC tested up to: 8.4.0
+WC tested up to: 8.5.2
 License: MIT
 
 HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments.
@@ -196,3 +196,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 4.1.0 =
 - Now it is compatible to High-Performance Order Storage
+
+= 4.1.1 =
+- Fixed refud error when amount is greater than or equal to 1000

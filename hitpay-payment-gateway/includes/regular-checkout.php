@@ -1132,7 +1132,7 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function process_refund($orderId, $amount = NULL, $reason = '') {
         $order = $this->getOrder($orderId);
         $amount = (float)strip_tags(trim($amount));
-        $amountValue = number_format($amount, 2);
+        $amountValue = number_format($amount, 2, '.', '');
 
         try {
             $HitPay_transaction_id = $this->getOrderMetaData($order, $orderId, 'HitPay_transaction_id', true );
