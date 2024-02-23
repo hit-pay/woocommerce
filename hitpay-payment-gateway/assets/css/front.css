@@ -16,14 +16,17 @@
     border-radius: 5px;
 }
 
-.payment_method_hitpay .payment_box.payment_method_hitpay {
+.payment_method_hitpay .payment_method_hitpay_custom_box {
     background-color: #fafafa !important;
-    padding: 1.41575em !important;
-    padding-top: 18px !important;
+    padding: 1em !important;
     margin-top: 0 !important;
 }
 .payment_method_hitpay .payment_box.payment_method_hitpay:before {
     display: none !important;
+}
+.wc_payment_method .payment_box{
+	padding: 0 !important;
+	background: none !important;
 }
 
 .hitpay-payment-gateway-form .payment-labels img {

@@ -221,11 +221,11 @@ class WC_HitPay extends WC_Payment_Gateway {
 
         if($customiseIcon && $gateway_id == 'hitpay') {
             $icon = '';
-            ?><?php
+ 
             if ($this->payments) {
-            ?>
-                <div class="form-row hitpay-payment-gateway-form">
-            <?php      
+			
+		$icon .= '<div class="form-row hitpay-payment-gateway-form">';
+     
                 $pngs = array(
                     'pesonet',
                     'eftpos',
@@ -253,21 +253,18 @@ class WC_HitPay extends WC_Payment_Gateway {
                     if (in_array($payment, $pngs)) {
                         $extn = 'png';
                     }
-                    ?>
+                    $icon .= '
                     <div class="payment-labels-container">
-                        <div class="payment-labels hitpay-<?php echo $payment?>">
-                            <label class="hitpay-<?php echo $payment?>">
-                                <img src="<?php echo HITPAY_PLUGIN_URL. '/assets/images/'.$payment.'.'.$extn; ?>" alt="<?php echo esc_attr( $icons[$payment] )?>">
+                        <div class="payment-labels hitpay-'.$payment.'">
+                            <label class="hitpay-'.$payment.'">
+                                <img src="'.HITPAY_PLUGIN_URL. '/assets/images/'.$payment.'.'.$extn.'" alt="'.esc_attr( $icons[$payment] ).'">
                             </label>
                         </div>
                     </div>
-                    <?php
+                    ';
                 }
-            ?>
-                </div>
-            <?php        
+		$icon .= '</div>';
             }
-            ?><?php
         }
 
         return $icon;
@@ -688,22 +685,24 @@ class WC_HitPay extends WC_Payment_Gateway {
     function payment_fields()
     { 
         ?>
-        <div class="form-row form-row-wide">
+		<?php
+		   if (isset( $_REQUEST['cancelled'] ) )  {
+		?>
+		<script>
+			let message = '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout"><div class="woocommerce-error"><?php echo __('Payment canceled by customer', $this->domain)?></div></div>';
+			jQuery(document).ready(function(){
+				jQuery('.woocommerce-notices-wrapper:first').html(message);
+			});
+		</script>
+		<?php
+		   }
+		?>
+		
+		<?php if (!empty($this->description) || ($this->enable_pos && count($this->terminal_ids) > 0 ) ) {?>
+        <div class="form-row form-row-wide payment_method_hitpay_custom_box">
             <?php if (!empty($this->description)) {?>
             <p><?php echo $this->description; ?></p>
             <?php } ?>
-            <?php
-               if (isset( $_REQUEST['cancelled'] ) )  {
-            ?>
-            <script>
-                let message = '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout"><div class="woocommerce-error"><?php echo __('Payment canceled by customer', $this->domain)?></div></div>';
-                jQuery(document).ready(function(){
-                    jQuery('.woocommerce-notices-wrapper:first').html(message);
-                });
-            </script>
-            <?php
-               }
-            ?>
             <?php
             if ($this->enable_pos && count($this->terminal_ids) > 0) {
                 $filter_terminal_ids = $this->filterTerminalIds();
@@ -747,10 +746,12 @@ class WC_HitPay extends WC_Payment_Gateway {
              <?php
             }
             ?>
-            <?php if ($this->drop_in) {?>
-            <div id="hitpay_background_layer"></div>
-            <?php }?>
         </div>
+		<?php } ?>
+		
+		<?php if ($this->drop_in) {?>
+		<div id="hitpay_background_layer"></div>
+		<?php }?>
         <?php
     }
 
@@ -1132,7 +1133,7 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function process_refund($orderId, $amount = NULL, $reason = '') {
         $order = $this->getOrder($orderId);
         $amount = (float)strip_tags(trim($amount));
-        $amountValue = number_format($amount, 2);
+        $amountValue = number_format($amount, 2, '.', '');
 
         try {
             $HitPay_transaction_id = $this->getOrderMetaData($order, $orderId, 'HitPay_transaction_id', true );
