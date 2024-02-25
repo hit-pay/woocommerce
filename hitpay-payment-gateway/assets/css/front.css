@@ -105,3 +105,23 @@ body.theme-storefront.right-sidebar .hitpay-payment-gateway-form .payment-labels
 .hitpay-pos-card-reader-multiple {
     display: block;
 }
+
+.hitpay-own-payment-button {
+	border-radius: 100px;
+    box-shadow: none!important;
+    height: 50px;
+    max-width: 100%!important;
+    width: 100%!important;
+	background: linear-gradient(155deg,#002771,#5e0fc3)!important;
+    border-color: #ffffffa8;
+	align-items: center;
+    border: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+}
+.hitpay-own-payment-button:hover{
+	background-color: #223159!important;
+	text-decoration:none!important;
+	opacity:0.9
+}

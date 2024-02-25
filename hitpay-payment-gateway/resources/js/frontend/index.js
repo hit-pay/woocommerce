@@ -12,7 +12,13 @@ const defaultLabel = __(
 	'woo-gutenberg-products-block'
 );
 
+const defaultPlaceOrderText = __(
+	'Place Order',
+	'woo-gutenberg-products-block'
+);
+
 const label = decodeEntities( getHitpayServerData().title ) || defaultLabel;
+
 /**
  * Content component
  */
@@ -41,6 +47,7 @@ const cardIcons = geHitpayIcons();
 const HitPay = {
 	name: "hitpay",
 	label: <Label />,
+	placeOrderButtonLabel: String(decodeEntities( getHitpayServerData().place_order_text ) || defaultPlaceOrderText),
 	content: <HitpayComponent RenderedComponent={ ContentComponent }/>,
 	edit: <HitpayComponent RenderedComponent={ ContentComponent }/>,
         icons: cardIcons,

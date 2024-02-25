@@ -201,3 +201,4 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 - Fixed refud error when amount is greater than or equal to 1000
 - Fixed logo display compatible to custom themes
 - Fixed empty payment box while drop-in enabled.
+- Added new option to customize the place order button.
