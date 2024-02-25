@@ -96,6 +96,7 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
             'pos_enabled' => $this->isPosEnabled(),
             'terminal_ids' => $this->gateway->terminal_ids,
             'total_terminals' => count($this->gateway->terminal_ids),
+			'place_order_text' => $this->getPlaceOrderText(),
         ];
     }
     
@@ -113,6 +114,14 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
             $status = true;
         } 
         return $status;
+    }
+	
+	private function getPlaceOrderText() {
+        $text = '';
+        if ($this->gateway->payment_button) {
+            $text = $this->gateway->place_order_text;
+        } 
+        return $text;
     }
     
     /**

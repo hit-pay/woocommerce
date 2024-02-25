@@ -81,3 +81,36 @@ function woocommerce_hitpay_blocks_support() {
         );
     }
 }
+
+add_filter('woocommerce_order_button_html', 'custom_order_button_html', 10, 5 );
+function custom_order_button_html( $order_button_html ) {
+    $chosen_payment_method = WC()->session->get('chosen_payment_method');
+    if( $chosen_payment_method == 'hitpay'){
+		$payment_button = get_option('woocommerce_hitpay_payment_button');
+		if($payment_button) {
+			$place_order_text = get_option('woocommerce_hitpay_place_order_text');
+			if (empty($place_order_text)) {
+				$place_order_text = 'Complete Payment';
+			}
+			$order_button_html = '<button type="submit" class="hitpay-own-payment-button button alt wp-element-button" name="woocommerce_checkout_place_order" id="place_order" value="'.$place_order_text.'" data-value="'.$place_order_text.'">'.$place_order_text.'</button>';
+		}
+    }
+	
+	// jQuery code: Make dynamic text button "on change" event ?>
+    <script type="text/javascript">
+    (function($){
+        $('form.checkout').on( 'change', 'input[name^="payment_method"]', function() {
+            var t = { updateTimer: !1,  dirtyInput: !1,
+                reset_update_checkout_timer: function() {
+                    clearTimeout(t.updateTimer)
+                },  trigger_update_checkout: function() {
+                    t.reset_update_checkout_timer(), t.dirtyInput = !1,
+                    $(document.body).trigger("update_checkout")
+                }
+            };
+            t.trigger_update_checkout();
+        });
+    })(jQuery);
+    </script><?php
+    return $order_button_html;
+}

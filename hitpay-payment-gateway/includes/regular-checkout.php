@@ -55,6 +55,18 @@ class WC_HitPay extends WC_Payment_Gateway {
         } else {
             $this->style = get_option('woocommerce_hitpay_style');
         }
+		
+		if (!$this->option_exists("woocommerce_hitpay_payment_button")) {
+            $this->payment_button = 1;
+        } else {
+            $this->payment_button = get_option('woocommerce_hitpay_payment_button');
+        }
+
+        if (!$this->option_exists("woocommerce_hitpay_place_order_text")) {
+            $this->place_order_text = 'Complete Payment';
+        } else {
+            $this->place_order_text = get_option('woocommerce_hitpay_place_order_text');
+        }
 
         $this->enable_pos = get_option('woocommerce_hitpay_enable_pos');
 
@@ -406,6 +418,18 @@ class WC_HitPay extends WC_Payment_Gateway {
 
                 $this->customize = get_option('woocommerce_hitpay_customize');
                 $this->style = get_option('woocommerce_hitpay_style');
+				
+				if (isset($post_data['woocommerce_hitpay_payment_button'])) {
+                    update_option('woocommerce_hitpay_payment_button', 1);
+                } else {
+                    update_option('woocommerce_hitpay_payment_button', 0);
+                }
+                $place_order_text = $post_data['woocommerce_hitpay_place_order_text'];
+                $place_order_text = sanitize_text_field($place_order_text);
+                update_option('woocommerce_hitpay_place_order_text', $place_order_text);
+
+                $this->payment_button = get_option('woocommerce_hitpay_payment_button');
+                $this->place_order_text = get_option('woocommerce_hitpay_place_order_text');
 
                 if (isset($post_data['woocommerce_hitpay_enable_pos'])) {
                     update_option('woocommerce_hitpay_enable_pos', 1);
@@ -501,6 +525,35 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 <span class="woocommerce-help-tip2">
                                    Here you can update CSS styles for HitPay Payment status display container.
                                </span>
+                            </fieldset>
+                        </td>
+                    </tr>
+					<tr valign="top">
+                        <th scope="row" class="titledesc">
+                            <label for="woocommerce_hitpay_payment_button">Enable HitPay Place Order Button </label>
+                        </th>
+                        <td class="forminp">
+                            <fieldset>
+                                <legend class="screen-reader-text"><span>Enable HitPay Place Order Button</span></legend>
+                                <label for="woocommerce_hitpay_payment_button">
+                                    <input class="" type="checkbox" name="woocommerce_hitpay_payment_button" id="woocommerce_hitpay_payment_button" style="" value="1" 
+                                        <?php echo $this->payment_button ? 'checked="checked"':''?> >
+                                </label>
+                                <br>
+                                <span class="woocommerce-help-tip2">
+                                    If enabled, HitPay Payment Gateway branding place button will be displayed when selecting this payment option in the checkout.
+                                </span>
+                            </fieldset>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row" class="titledesc">
+                           <label for="woocommerce_hitpay_place_order_text">Place Order Button Text</label>
+                        </th>
+                        <td class="forminp">
+                            <fieldset>
+                                <legend class="screen-reader-text"><span>Place Order Button Text</span></legend>
+                                <input type="text" class="input-text regular-input " name="woocommerce_hitpay_place_order_text" id="woocommerce_hitpay_place_order_text" value="<?php echo $this->place_order_text?>" />
                             </fieldset>
                         </td>
                     </tr>
