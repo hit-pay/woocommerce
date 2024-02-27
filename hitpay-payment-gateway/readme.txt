@@ -90,7 +90,6 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 = 2.0 =
 * Initial release.
 
-== Upgrade Notice ==
 = 2.1 =
 - Removed payment logos select option as mandatory.
 - Internal server error catched and updating the order status as failed.
@@ -198,7 +197,10 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 - Now it is compatible to High-Performance Order Storage
 
 = 4.1.1 =
+- Feb 26, 2024
 - Fixed refud error when amount is greater than or equal to 1000
 - Fixed logo display compatible to custom themes
 - Fixed empty payment box while drop-in enabled.
 - Added new option to customize the place order button.
+- Plugin tested on WordPress 6.4.3
+- Plugin tested on WooCommerce 8.6.1
