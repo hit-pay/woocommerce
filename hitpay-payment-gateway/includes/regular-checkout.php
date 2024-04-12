@@ -1429,6 +1429,7 @@ class WC_HitPay extends WC_Payment_Gateway {
             'grab_paylater' => __('PayLater by Grab'),
             'favepay' => __('FavePay'),
             'shopback_paylater' => __('ShopBack PayLater'),
+            'duitnow' => __('DuitNow'),
         ];
 
         return $methods;
