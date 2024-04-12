@@ -89,7 +89,7 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 = 4.1.3 =
 * Apr 12, 2024
-* Added DuitNow logo
+* Added DuitNow, Touch n Go and Boost logos
 * Plugin tested on WooCommerce 8.7.0
 * Plugin tested on WordPress 6.5.2
 

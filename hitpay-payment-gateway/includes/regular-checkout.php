@@ -1430,6 +1430,8 @@ class WC_HitPay extends WC_Payment_Gateway {
             'favepay' => __('FavePay'),
             'shopback_paylater' => __('ShopBack PayLater'),
             'duitnow' => __('DuitNow'),
+            'touchngo' => __('Touch \'n Go'),
+            'boost' => __('Boost'),
         ];
 
         return $methods;
