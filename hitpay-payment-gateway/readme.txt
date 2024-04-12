@@ -2,8 +2,8 @@
 Contributors: HitPay
 Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
 Requires at least: 4.0
-Tested up to: 6.4.3
-Stable tag: 4.1.2
+Tested up to: 6.5.2
+Stable tag: 4.1.3
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 8.7.0
@@ -87,124 +87,131 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 == Changelog ==
 
-= 2.0 =
-* Initial release.
-
-= 2.1 =
-- Removed payment logos select option as mandatory.
-- Internal server error catched and updating the order status as failed.
-- Displaying the payment type used by customer to make payment in the admin order view.
-
-= 2.2 =
-- Resolved a bug
-
-= 2.3 =
-- Resolved a bug
-
-= 2.4 =
-- If customer click back button, check the order status if paid before cancelling the order.
-
-= 2.5 =
-- Fix payment method text position
-
-= 2.6 =
-- Fixed - webhook executing multiple times.
-
-= 2.7 =
-- Added simulator for CURL if not enabled on the server
-- Sending sitename to the gateway(helpful for the multi sites)
-
-= 2.8 =
-- Added Refund Option
-
-= 2.9 =
-- Payment details displayed on admin order totals
-- Order status selection option provided for successful payment
-- Customized payment title 
-
-= 3.0 =
-- Customized for custom-order-numbers-for-woocommerce plugin
-
-= 3.1 =
-- Fixed Uncaught Error: Class WC_Payment_Class not found during the update time woocommerce plugin went to inactive.
-
-= 3.2.0 =
-- Expires after parameter added to the payment request, if this option is enabled and expiry time set, then checkout URL will expired after set time.
-
-= 3.2.1 =
-- Fixed Uncaught Error: Non-static method WC_Legacy_Cart::get_checkout_url() cannot be called statically.
-
-= 3.2.2 =
-- Added FPX and Zip payment logos and removed hoola payment logo
-
-= 3.2.3 =
-- Added Apple pay and Google pay logos
-
-= 3.2.4 =
-- Added an option to customize payment status display on the order thank you page after redirected from the gateway
-- Added an option to control the CSS styles for HitPay Payment status display container on the order thank you page.
-- Plugin tested on WordPress 6.0.1
-- Plugin tested on WooCommerce 6.7.0
-
-= 3.2.5 =
-- Added Atome Plus logos and Philipines payment gateways logos(Unionbank, QR PH, PESONet, GCash, Billease BNPL)
-- Added eftpos, maestro, Alfamart, Indomaret, DANA, gopay, Link Aja!, OVO, QRIS, Bank Danamon, and PermataBank payment gateways logos
-- Added Bank Syariah Indonesia, BCA, BNI, BRI, CIMB Niaga, DOKU, Mandiri, Akulaku BNPL, and Kredivo BNPL payment gateways logos
-- Added PHILTRUST BANK, AllBank, ASIA UNITED BANK, CHINABANK, instaPay, LANDBANK, Metrobank, PNB, and QUEENBANK payment gateways logos
-- Added RCBC, TayoCash, USSC, bayad, CEBUANA LHUILLIER, ecPay, PALAWAN PAWNSHOP, BPI, PSBank, and Robinsons Bank payment gateways logos
-- Added Diners Club, Discover payment gateways logos
-- Added DOKU Wallet, PayLater by Grab, FavePay, and ShopBack PayLater payment gateways logos
-- Plugin tested on WordPress 6.1.1
-- Plugin tested on WooCommerce 7.4.1
-
-= 4.0.0 =
-- Now merchant can enable POS payments
-- Payment method selection UI changed
-- Plugin tested on WordPress 6.2.1
-- Plugin tested on WooCommerce 7.5.1
-
-= 4.0.1 =
-- For POS payments, new tab is added, where merchant can add upto 5 terminal ids with cashier email id field
-- Payment method selection UI changed for POS Card reader terminal selection
-
-= 4.0.2 =
-- Fixed Mobile and Tablet Logo display css issue
-- Fixed Mobile and Tablet POS terminal selection css issue
-
-= 4.0.3 =
-- Drop-In (POPUP) option included. The drop-in is embedded into your webpage so your customer will never have to leave your site.
-- Fixed bugs to make it compatible with WooCommerce Pos plugin
-
-= 4.0.4 =
-- Fix Log file
-
-= 4.0.5 =
-- Applied 2 styles to logo display
-
-= 4.0.6 =
-- Return URL query string changed
-
-= 4.0.7 =
-- Now it is compatible to block based checkout - redirect option
-
-= 4.0.8 =
-- Now it is compatible to block based checkout - Drop-In (Popup) and POS option with Form Build
-
-= 4.0.9 =
-- Webhook order_id param changed since some third party plugin intercept this and prevented the webhook execution
-
-= 4.1.0 =
-- Now it is compatible to High-Performance Order Storage
-
-= 4.1.1 =
-- Feb 26, 2024
-- Fixed refud error when amount is greater than or equal to 1000
-- Fixed logo display compatible to custom themes
-- Fixed empty payment box while drop-in enabled.
-- Added new option to customize the place order button.
-- Plugin tested on WordPress 6.4.3
-- Plugin tested on WooCommerce 8.6.1
+= 4.1.3 =
+* Apr 12, 2024
+* Added DuitNow, Touch n Go and Boost logos
+* Plugin tested on WooCommerce 8.7.0
+* Plugin tested on WordPress 6.5.2
 
 = 4.1.2 =
-- Resolved conflict error with hitpay for givewp plugin
-- Plugin tested on WooCommerce 8.7.0
+* Apr 2, 2024
+* Resolved conflict error with hitpay for givewp plugin
+* Plugin tested on WooCommerce 8.7.0
+
+= 4.1.1 =
+* Feb 26, 2024
+* Fixed refud error when amount is greater than or equal to 1000
+* Fixed logo display compatible to custom themes
+* Fixed empty payment box while drop-in enabled.
+* Added new option to customize the place order button.
+* Plugin tested on WordPress 6.4.3
+* Plugin tested on WooCommerce 8.6.1
+
+= 4.1.0 =
+* Now it is compatible to High-Performance Order Storage
+
+= 4.0.9 =
+* Webhook order_id param changed since some third party plugin intercept this and prevented the webhook execution
+
+= 4.0.8 =
+* Now it is compatible to block based checkout - Drop-In (Popup) and POS option with Form Build
+
+= 4.0.7 =
+* Now it is compatible to block based checkout - redirect option
+
+= 4.0.6 =
+* Return URL query string changed
+
+= 4.0.5 =
+* Applied 2 styles to logo display
+
+= 4.0.4 =
+* Fix Log file
+
+= 4.0.3 =
+* Drop-In (POPUP) option included. The drop-in is embedded into your webpage so your customer will never have to leave your site.
+* Fixed bugs to make it compatible with WooCommerce Pos plugin
+
+= 4.0.2 =
+* Fixed Mobile and Tablet Logo display css issue
+* Fixed Mobile and Tablet POS terminal selection css issue
+
+= 4.0.1 =
+* For POS payments, new tab is added, where merchant can add upto 5 terminal ids with cashier email id field
+* Payment method selection UI changed for POS Card reader terminal selection
+
+= 4.0.0 =
+* Now merchant can enable POS payments
+* Payment method selection UI changed
+* Plugin tested on WordPress 6.2.1
+* Plugin tested on WooCommerce 7.5.1
+
+= 3.2.5 =
+* Added Atome Plus logos and Philipines payment gateways logos(Unionbank, QR PH, PESONet, GCash, Billease BNPL)
+* Added eftpos, maestro, Alfamart, Indomaret, DANA, gopay, Link Aja!, OVO, QRIS, Bank Danamon, and PermataBank payment gateways logos
+* Added Bank Syariah Indonesia, BCA, BNI, BRI, CIMB Niaga, DOKU, Mandiri, Akulaku BNPL, and Kredivo BNPL payment gateways logos
+* Added PHILTRUST BANK, AllBank, ASIA UNITED BANK, CHINABANK, instaPay, LANDBANK, Metrobank, PNB, and QUEENBANK payment gateways logos
+* Added RCBC, TayoCash, USSC, bayad, CEBUANA LHUILLIER, ecPay, PALAWAN PAWNSHOP, BPI, PSBank, and Robinsons Bank payment gateways logos
+* Added Diners Club, Discover payment gateways logos
+* Added DOKU Wallet, PayLater by Grab, FavePay, and ShopBack PayLater payment gateways logos
+* Plugin tested on WordPress 6.1.1
+* Plugin tested on WooCommerce 7.4.1
+
+= 3.2.4 =
+* Added an option to customize payment status display on the order thank you page after redirected from the gateway
+* Added an option to control the CSS styles for HitPay Payment status display container on the order thank you page.
+* Plugin tested on WordPress 6.0.1
+* Plugin tested on WooCommerce 6.7.0
+
+= 3.2.3 =
+* Added Apple pay and Google pay logos
+
+= 3.2.2 =
+* Added FPX and Zip payment logos and removed hoola payment logo
+
+= 3.2.1 =
+* Fixed Uncaught Error: Non-static method WC_Legacy_Cart::get_checkout_url() cannot be called statically.
+
+= 3.2.0 =
+* Expires after parameter added to the payment request, if this option is enabled and expiry time set, then checkout URL will expired after set time.
+
+= 3.1 =
+* Fixed Uncaught Error: Class WC_Payment_Class not found during the update time woocommerce plugin went to inactive.
+
+= 3.0 =
+* Customized for custom-order-numbers-for-woocommerce plugin
+
+= 2.9 =
+* Payment details displayed on admin order totals
+* Order status selection option provided for successful payment
+* Customized payment title 
+
+= 2.8 =
+* Added Refund Option
+
+= 2.7 =
+* Added simulator for CURL if not enabled on the server
+* Sending sitename to the gateway(helpful for the multi sites)
+
+= 2.6 =
+* Fixed - webhook executing multiple times.
+
+= 2.5 =
+* Fix payment method text position
+
+= 2.4 =
+* If customer click back button, check the order status if paid before cancelling the order.
+
+= 2.3 =
+* Resolved a bug
+
+= 2.2 =
+* Resolved a bug
+
+= 2.1 =
+* Removed payment logos select option as mandatory.
+* Internal server error catched and updating the order status as failed.
+* Displaying the payment type used by customer to make payment in the admin order view.
+
+= 2.0 =
+* Initial release.
