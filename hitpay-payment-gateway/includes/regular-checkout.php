@@ -14,7 +14,24 @@ use HitPay\Response\PaymentStatus;
 class WC_HitPay extends WC_Payment_Gateway {
 
     public $domain;
-
+	
+	public $terminal_ids;
+	public $enable_pos;
+	public $place_order_text;
+	public $payment_button;
+	public $style;
+	public $customize;
+	public $drop_in;
+	public $expires_after;
+	public $expires_after_status;
+	public $order_status;
+	public $payments;
+	public $salt;
+	public $api_key;
+	public $debug;
+	public $mode;
+	public $cashier_emails;
+	
     /**
      * Constructor for the gateway.
      */
@@ -110,9 +127,9 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function hitpay_load_front_assets() {
         if ( is_checkout() ) {         
             wp_enqueue_style( 'hitpay-css', HITPAY_PLUGIN_URL.'/assets/css/front.css', array(),HITPAY_VERSION,'all' );
-            if ($this->drop_in == 'yes') {
+            if ($this->drop_in === 'yes') {
                 $dropin_js = 'https://sandbox.hit-pay.com/hitpay.js';
-                if ($this->mode == 'yes') {
+                if ($this->mode === 'yes') {
                     $dropin_js = 'https://hit-pay.com/hitpay.js';
                 }
                 wp_enqueue_script( 'hitpay_js', $dropin_js );
@@ -151,22 +168,20 @@ class WC_HitPay extends WC_Payment_Gateway {
 			return get_post_meta( $order_id, $key, $single );
 		}
 	}
-	
 
     public function admin_order_totals( $order_id ){
 		$order = $this->getOrder($order_id);
         
-        if ($order->get_payment_method() == $this->id) {
+        if ($order->get_payment_method() === $this->id) {
             $order_id = $order->get_id();
             $payment_method = '';
             $payment_request_id = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_request_id', true );
 
             if (!empty($payment_request_id)) {
-				
                 $payment_method = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_method', true );
-				
                 $fees = $this->getOrderMetaData($order, $order_id, 'HitPay_fees', true );
-                if (empty($payment_method) || empty($fees)) {
+				$fees_currency = $this->getOrderMetaData($order, $order_id, 'HitPay_fees_currency', true );
+                if (empty($payment_method) || empty($fees) || empty($fees_currency)) {
                     try {
                         $hitpay_client = new Client(
                             $this->api_key,
@@ -182,6 +197,8 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 $order->add_meta_data('HitPay_payment_method', $payment_method);
                                 $fees = $payment->fees;
                                 $order->add_meta_data('HitPay_fees', $fees);
+								$fees_currency = $payment->fees_currency;
+								$order->add_meta_data('HitPay_fees_currency', $fees_currency);
                                 $order->save_meta_data();
                             }
                         }
@@ -192,7 +209,6 @@ class WC_HitPay extends WC_Payment_Gateway {
             }
 
             if (!empty($payment_method)) {
-                $HitPay_currency = $this->getOrderMetaData($order, $order_id, 'HitPay_currency', true );
         ?>
                 <table class="wc-order-totals" style="border-top: 1px solid #999; margin-top:12px; padding-top:12px">
                     <tbody>
@@ -209,7 +225,8 @@ class WC_HitPay extends WC_Payment_Gateway {
                             <td class="total">
                                 <span class="woocommerce-Price-amount amount">
                                     <bdi>
-                                    <?php echo wc_price($fees, array('currency' => $HitPay_currency)); ?>
+                                    <?php echo wc_price($fees, array('currency' => strtoupper($fees_currency))); ?>
+									(<?php echo strtoupper($fees_currency)?>)
                                     </bdi>
                                 </span>
                             </td>
@@ -227,55 +244,53 @@ class WC_HitPay extends WC_Payment_Gateway {
         $icons = $this->getPaymentIcons();
 
         $customiseIcon = true;
-        if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'wc_pos_payload') {
+        if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'wc_pos_payload') {
             $customiseIcon = false;
         }
 
-        if($customiseIcon && $gateway_id == 'hitpay') {
+        if($customiseIcon && $gateway_id === 'hitpay') {
             $icon = '';
- 
             if ($this->payments) {
-			
-		$icon .= '<div class="form-row hitpay-payment-gateway-form">';
+				$icon .= '<div class="form-row hitpay-payment-gateway-form">';
      
-                $pngs = array(
-                    'pesonet',
-                    'eftpos',
-                    'doku',
-                    'philtrustbank',
-                    'allbank',
-                    'aub',
-                    'chinabank',
-                    'instapay',
-                    'landbank',
-                    'metrobank',
-                    'pnb',
-                    'queenbank',
-                    'ussc',
-                    'bayad',
-                    'cebuanalhuillier',
-                    'psbank',
-                    'robinsonsbank',
-                    'doku_wallet',
-                    'favepay',
-                    'shopback_paylater'
-                );
-                foreach ($this->payments as $payment) {
-                    $extn = 'svg';
-                    if (in_array($payment, $pngs)) {
-                        $extn = 'png';
-                    }
-                    $icon .= '
-                    <div class="payment-labels-container">
-                        <div class="payment-labels hitpay-'.$payment.'">
-                            <label class="hitpay-'.$payment.'">
-                                <img src="'.HITPAY_PLUGIN_URL. '/assets/images/'.$payment.'.'.$extn.'" alt="'.esc_attr( $icons[$payment] ).'">
-                            </label>
-                        </div>
-                    </div>
-                    ';
-                }
-		$icon .= '</div>';
+					$pngs = array(
+						'pesonet',
+						'eftpos',
+						'doku',
+						'philtrustbank',
+						'allbank',
+						'aub',
+						'chinabank',
+						'instapay',
+						'landbank',
+						'metrobank',
+						'pnb',
+						'queenbank',
+						'ussc',
+						'bayad',
+						'cebuanalhuillier',
+						'psbank',
+						'robinsonsbank',
+						'doku_wallet',
+						'favepay',
+						'shopback_paylater'
+					);
+					foreach ($this->payments as $payment) {
+						$extn = 'svg';
+						if (in_array($payment, $pngs)) {
+							$extn = 'png';
+						}
+						$icon .= '
+						<div class="payment-labels-container">
+							<div class="payment-labels hitpay-'.esc_attr($payment).'">
+								<label class="hitpay-'.esc_attr($payment).'">
+									<img src="'.HITPAY_PLUGIN_URL. '/assets/images/'.esc_attr($payment).'.'.esc_attr($extn).'" alt="'.esc_attr( $icons[$payment] ).'">
+								</label>
+							</div>
+						</div>
+						';
+					}
+				$icon .= '</div>';
             }
         }
 
@@ -481,79 +496,79 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function hitpay_admin_footer() {
         $this->expires_after_status = $this->get_option('expires_after_status');
         $this->expires_after = $this->get_option('expires_after');
-        if (isset($_GET['page']) && sanitize_text_field($_GET['page']) == 'wc-settings' && isset($_GET['section']) && sanitize_text_field($_GET['section']) == 'hitpay') { 
+        if (isset($_GET['page']) && sanitize_text_field($_GET['page']) === 'wc-settings' && isset($_GET['section']) && sanitize_text_field($_GET['section']) === 'hitpay') { 
             $hitpaytab = 'settings';
             if(isset($_GET['hitpaytab'])) {
                 $hitpaytab = sanitize_text_field($_GET['hitpaytab']);
             }
         ?>
         <nav id="hitpay-tabs" class="nav-tab-wrapper" style="display: none">
-            <a id="hitpay-setting-tab" href="?page=wc-settings&section=hitpay&tab=checkout&hitpaytab=settings" class="nav-tab <?php echo (($hitpaytab == 'settings') ? 'nav-tab-active':'')?>">Settings</a>
-            <a id="hitpay-customize-tab" href="?page=wc-settings&section=hitpay&hitpaytab=customize&tab=checkout" class="nav-tab <?php echo (($hitpaytab == 'customize') ? 'nav-tab-active':'')?>">Customization</a>
-            <a id="hitpay-pos-settings-tab" href="?page=wc-settings&section=hitpay&hitpaytab=pos-settings&tab=checkout" class="nav-tab <?php echo (($hitpaytab == 'pos-settings') ? 'nav-tab-active':'')?>">POS Payments</a>
+            <a id="hitpay-setting-tab" href="?page=wc-settings&section=hitpay&tab=checkout&hitpaytab=settings" class="nav-tab <?php echo (($hitpaytab === 'settings') ? 'nav-tab-active':'')?>"><?php echo __('Settings', $this->domain)?></a>
+            <a id="hitpay-customize-tab" href="?page=wc-settings&section=hitpay&hitpaytab=customize&tab=checkout" class="nav-tab <?php echo (($hitpaytab === 'customize') ? 'nav-tab-active':'')?>"><?php echo __('Customization', $this->domain)?></a>
+            <a id="hitpay-pos-settings-tab" href="?page=wc-settings&section=hitpay&hitpaytab=pos-settings&tab=checkout" class="nav-tab <?php echo (($hitpaytab === 'pos-settings') ? 'nav-tab-active':'')?>"><?php echo __('POS Payments', $this->domain)?></a>
         </nav>
         <div class="tab-content" id="hitpay-tab-content-customize" style="display: none">
             <table class="form-table">
                 <tbody>
                     <tr valign="top">
                         <th scope="row" class="titledesc">
-                            <label for="woocommerce_hitpay_customize">Enable Status Display </label>
+                            <label for="woocommerce_hitpay_customize"><?php echo __('Enable Status Display', $this->domain)?> </label>
                         </th>
                         <td class="forminp">
                             <fieldset>
-                                <legend class="screen-reader-text"><span>Enable Status Display</span></legend>
+                                <legend class="screen-reader-text"><span><?php echo __('Enable Status Display', $this->domain)?></span></legend>
                                 <label for="woocommerce_hitpay_customize">
                                     <input class="" type="checkbox" name="woocommerce_hitpay_customize" id="woocommerce_hitpay_customize" style="" value="1" 
                                         <?php echo $this->customize ? 'checked="checked"':''?> >
                                 </label>
                                 <br>
                                 <span class="woocommerce-help-tip2">
-                                    If enabled, payment status will be retrieved and displayed on the Order Confirmation Page.
+                                    <?php echo __('If enabled, payment status will be retrieved and displayed on the Order Confirmation Page.', $this->domain)?>
                                 </span>
                             </fieldset>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row" class="titledesc">
-                           <label for="woocommerce_hitpay_style">Style</label>
+                           <label for="woocommerce_hitpay_style"><?php echo __('Style', $this->domain)?></label>
                         </th>
                         <td class="forminp">
                             <fieldset>
-                                <legend class="screen-reader-text"><span>Style</span></legend>
-                                <textarea rows="3" cols="20" class="input-text wide-input " type="textarea" name="woocommerce_hitpay_style" id="woocommerce_hitpay_style"><?php echo $this->style?></textarea>
+                                <legend class="screen-reader-text"><span><?php echo __('Style', $this->domain)?></span></legend>
+                                <textarea rows="3" cols="20" class="input-text wide-input " type="textarea" name="woocommerce_hitpay_style" id="woocommerce_hitpay_style"><?php echo esc_attr($this->style)?></textarea>
                                 <br/>
                                 <span class="woocommerce-help-tip2">
-                                   Here you can update CSS styles for HitPay Payment status display container.
+                                   <?php echo __('Here you can update CSS styles for HitPay Payment status display container.', $this->domain)?>
                                </span>
                             </fieldset>
                         </td>
                     </tr>
 					<tr valign="top">
                         <th scope="row" class="titledesc">
-                            <label for="woocommerce_hitpay_payment_button">Enable HitPay Place Order Button </label>
+                            <label for="woocommerce_hitpay_payment_button"><?php echo __('Enable HitPay Place Order Button', $this->domain)?> </label>
                         </th>
                         <td class="forminp">
                             <fieldset>
-                                <legend class="screen-reader-text"><span>Enable HitPay Place Order Button</span></legend>
+                                <legend class="screen-reader-text"><span><?php echo __('Enable HitPay Place Order Button', $this->domain)?></span></legend>
                                 <label for="woocommerce_hitpay_payment_button">
                                     <input class="" type="checkbox" name="woocommerce_hitpay_payment_button" id="woocommerce_hitpay_payment_button" style="" value="1" 
                                         <?php echo $this->payment_button ? 'checked="checked"':''?> >
                                 </label>
                                 <br>
                                 <span class="woocommerce-help-tip2">
-                                    If enabled, HitPay Payment Gateway branding place button will be displayed when selecting this payment option in the checkout.
+                                    <?php echo __('If enabled, HitPay Payment Gateway branding place button will be displayed when selecting this payment option in the checkout.', $this->domain)?>
                                 </span>
                             </fieldset>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row" class="titledesc">
-                           <label for="woocommerce_hitpay_place_order_text">Place Order Button Text</label>
+                           <label for="woocommerce_hitpay_place_order_text"><?php echo __('Place Order Button Text', $this->domain)?></label>
                         </th>
                         <td class="forminp">
                             <fieldset>
-                                <legend class="screen-reader-text"><span>Place Order Button Text</span></legend>
-                                <input type="text" class="input-text regular-input " name="woocommerce_hitpay_place_order_text" id="woocommerce_hitpay_place_order_text" value="<?php echo $this->place_order_text?>" />
+                                <legend class="screen-reader-text"><span><?php echo __('Place Order Button Text', $this->domain)?></span></legend>
+                                <input type="text" class="input-text regular-input " name="woocommerce_hitpay_place_order_text" id="woocommerce_hitpay_place_order_text" value="<?php echo esc_attr($this->place_order_text)?>" />
                             </fieldset>
                         </td>
                     </tr>
@@ -565,11 +580,11 @@ class WC_HitPay extends WC_Payment_Gateway {
                 <tbody>
                     <tr valign="top">
                         <th scope="row" class="titledesc">
-                            <label for="woocommerce_hitpay_enable_pos">Enable POS Payments</label>
+                            <label for="woocommerce_hitpay_enable_pos"><?php echo __('Enable POS Payments', $this->domain)?></label>
                         </th>
                         <td class="forminp">
                             <fieldset>
-                                <legend class="screen-reader-text"><span>Enable POS Payments</span></legend>
+                                <legend class="screen-reader-text"><span><?php echo __('Enable POS Payments', $this->domain)?></span></legend>
                                 <label for="woocommerce_hitpay_enable_pos">
                                     <input class="" type="checkbox" name="woocommerce_hitpay_enable_pos" id="woocommerce_hitpay_enable_pos" style="" value="1" 
                                         <?php echo $this->enable_pos ? 'checked="checked"':''?> >
@@ -579,7 +594,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                     </tr>
                     <tr valign="top">
                         <td class="forminp" colspan="2" id="terminal_id_settings">
-                            <div>Enter Terminal Reader Information:</div>
+                            <div><?php echo __('Enter Terminal Reader Information:', $this->domain)?></div>
                             <div class="field_wrapper">
                                 <?php 
                                 if (count($this->terminal_ids) > 0) {
@@ -590,14 +605,14 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 <table style="border-bottom: 1px solid #ccc; margin-bottom: 10px" <?php if ($i > 1) {?>class="dynamic-field-table"<?php } ?>>
                                     <tr valign="top">
                                         <th scope="row" class="titledesc">
-                                            <label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label>
+                                            <label for="woocommerce_hitpay_enable_pos"><?php echo __('Terminal Reader ID', $this->domain)?></label>
                                         </th>
                                         <td class="forminp">
-                                            <input type="text" name="woocommerce_hitpay_terminal_ids[]" value="<?php echo $val?>"/>
+                                            <input type="text" name="woocommerce_hitpay_terminal_ids[]" value="<?php echo esc_attr($val)?>"/>
                                         </td>
                                         <td>
                                             <?php if ($i > 1) {?>
-                                            <a href="javascript:void(0);" class="btn button-secondary remove_button" title="Remove field">Remove</a>
+                                            <a href="javascript:void(0);" class="btn button-secondary remove_button" title="Remove field"><?php echo __('Remove', $this->domain)?></a>
                                             <?php } else { ?>
                                             &nbsp;
                                             <?php } ?>
@@ -605,10 +620,10 @@ class WC_HitPay extends WC_Payment_Gateway {
                                     </tr>
                                     <tr valign="top">
                                         <th scope="row" class="titledesc">
-                                            <label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label>
+                                            <label for="woocommerce_hitpay_enable_pos"><?php echo __('Cashier E-mail (Optional)', $this->domain)?></label>
                                         </th>
                                         <td class="forminp">
-                                            <input type="email" name="woocommerce_hitpay_cashier_emails[]" value="<?php echo (isset($this->cashier_emails[$key]) ? $this->cashier_emails[$key] : '') ?>"/>
+                                            <input type="email" name="woocommerce_hitpay_cashier_emails[]" value="<?php echo (isset($this->cashier_emails[$key]) ? esc_attr($this->cashier_emails[$key]) : '') ?>"/>
                                         </td>
                                         <td>&nbsp;</td>
                                     </tr>
@@ -620,7 +635,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 <table style="border-bottom: 1px solid #ccc; margin-bottom: 10px">
                                     <tr valign="top">
                                         <th scope="row" class="titledesc">
-                                            <label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label>
+                                            <label for="woocommerce_hitpay_enable_pos"><?php echo __('Terminal Reader ID', $this->domain)?></label>
                                         </th>
                                         <td class="forminp">
                                             <input type="text" name="woocommerce_hitpay_terminal_ids[]" value=""/>
@@ -631,7 +646,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                                     </tr>
                                     <tr valign="top">
                                         <th scope="row" class="titledesc">
-                                            <label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label>
+                                            <label for="woocommerce_hitpay_enable_pos"><?php echo __('Cashier E-mail (Optional)', $this->domain)?></label>
                                         </th>
                                         <td class="forminp">
                                             <input type="text" name="woocommerce_hitpay_cashier_emails[]" value=""/>
@@ -644,7 +659,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 ?>
                             </div>
                             <div>
-                                <a href="javascript:void(0);" class="btn button-secondary add_button" title="Add field">Add New</a>
+                                <a href="javascript:void(0);" class="btn button-secondary add_button" title="Add field"><?php echo __('Add New', $this->domain)?></a>
                             </div>
                         </td>
                     </tr>
@@ -652,7 +667,7 @@ class WC_HitPay extends WC_Payment_Gateway {
             </table>
         </div>
         <script type="text/javascript">
-            var hitpaytab = '<?php echo $hitpaytab?>';
+            var hitpaytab = '<?php echo esc_attr($hitpaytab)?>';
             jQuery(document).ready(function(){
                 var maxField = 5;
                 var addButton = jQuery('.add_button');
@@ -728,12 +743,12 @@ class WC_HitPay extends WC_Payment_Gateway {
         <?php
         }
     }
-
-    public function option_exists($name, $site_wide=false)
-    {
-        global $wpdb; 
-        return $wpdb->query("SELECT * FROM ". ($site_wide ? $wpdb->base_prefix : $wpdb->prefix). "options WHERE option_name ='$name' LIMIT 1");
-    }
+	
+	public function option_exists( $option_name, $site_wide = false ) 
+	{
+		global $wpdb; 
+		return $wpdb->query( $wpdb->prepare( "SELECT * FROM ". ($site_wide ? $wpdb->base_prefix : $wpdb->prefix). "options WHERE option_name ='%s' LIMIT 1", $option_name ) );
+	}
 
     function payment_fields()
     { 
@@ -761,23 +776,23 @@ class WC_HitPay extends WC_Payment_Gateway {
                 $filter_terminal_ids = $this->filterTerminalIds();
             ?>
             <div class="hitpay-payment-selection">
-                <label class="woocommerce-form__label woocommerce-form__label-for-radio radio" for="hitpay_payment_option-0" <?php if (count($filter_terminal_ids) == 1) {?>style="float:left"<?php }?>>
+                <label class="woocommerce-form__label woocommerce-form__label-for-radio radio" for="hitpay_payment_option-0" <?php if (count($filter_terminal_ids) === 1) {?>style="float:left"<?php }?>>
                     <input id="hitpay_payment_option-0"
                            class="woocommerce-form__input woocommerce-form__input-radio input-radio"
                            type="radio"
                            name="hitpay_payment_option" 
                            value="onlinepayment" checked="checked"> 
-                    <p style="display: inline">Online Payments</p>
+                    <p style="display: inline"><?php echo __('Online Payments', $this->domain)?></p>
                 </label>
 
-                <?php if (count($filter_terminal_ids) == 1) {?>
+                <?php if (count($filter_terminal_ids) === 1) {?>
                 <label class="woocommerce-form__label woocommerce-form__label-for-radio radio"  for="hitpay_payment_option-1">
                     <input id="hitpay_payment_option-1"
                            class="woocommerce-form__input woocommerce-form__input-radio input-radio"
                            type="radio"
                            name="hitpay_payment_option" 
-                           value="<?php echo $filter_terminal_ids[0]?>"> 
-                    <p style="display: inline">Card Reader</p>
+                           value="<?php echo esc_attr($filter_terminal_ids[0])?>"> 
+                    <p style="display: inline"><?php echo __('Card Reader', $this->domain)?></p>
                 </label>
                 <?php 
                     } else {
@@ -788,8 +803,8 @@ class WC_HitPay extends WC_Payment_Gateway {
                                    class="woocommerce-form__input woocommerce-form__input-radio input-radio"
                                    type="radio"
                                    name="hitpay_payment_option" 
-                                   value="<?php echo $val?>"> 
-                            <p style="display: inline">Card Reader - Terminal ID: <?php echo $val?></p>
+                                   value="<?php echo esc_attr($val)?>"> 
+                            <p style="display: inline"><?php echo __('Card Reader - Terminal ID:', $this->domain)?> <?php echo esc_attr($val)?></p>
                         </label>
                 <?php
                         }
@@ -843,9 +858,9 @@ class WC_HitPay extends WC_Payment_Gateway {
             if (isset($_GET['status'])) {
                 $status = sanitize_text_field($_GET['status']);
 
-                if ($status == 'canceled') {
+                if ($status === 'canceled') {
                     $status = $order->get_status();
-                    if ($status == 'processing' || $status == 'completed') {
+                    if ($status === 'processing' || $status === 'completed') {
                         $status = 'completed';
                     } else {
                         $reference = sanitize_text_field($_GET['reference']);
@@ -858,12 +873,12 @@ class WC_HitPay extends WC_Payment_Gateway {
                     }
                 }
 
-                if ($status == 'completed') {
+                if ($status === 'completed') {
                     $status = 'wait';
                 }
             }
 
-            if ($status != 'wait') {
+            if ($status !== 'wait') {
                 $status = $order->get_status();
             }
             ?>
@@ -882,7 +897,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
                 function show_hitpay_status(type='') {
                     jQuery('.payment-panel-wait').hide();
-                    <?php  if ($status == 'completed' || $status == 'pending') {?>
+                    <?php  if ($status === 'completed' || $status === 'pending') {?>
                     jQuery('.woocommerce-thankyou-order-received').show();
                     jQuery('.woocommerce-thankyou-order-details').show();
                     <?php } ?>
@@ -893,7 +908,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                     }
                  }
             </script>
-            <?php  if ($status == 'wait') {?>
+            <?php  if ($status === 'wait') {?>
             <style>
                 .payment-panel-wait .img-container {
                     text-align: center;
@@ -943,27 +958,27 @@ class WC_HitPay extends WC_Payment_Gateway {
             </div>
             <?php } ?>
 
-            <div class="payment-panel-pending" style="<?php echo ($status == 'pending' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
+            <div class="payment-panel-pending" style="<?php echo ($status === 'pending' ? 'display: block':'display: none')?>">
+                <div style="<?php echo esc_attr($style)?>">
                 <?php echo __('Your payment status is pending, we will update the status as soon as we receive notification from HitPay.', $this->domain) ?>
                 </div>
             </div>
 
-            <div class="payment-panel-completed" style="<?php echo ($status == 'completed' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
+            <div class="payment-panel-completed" style="<?php echo ($status === 'completed' ? 'display: block':'display: none')?>">
+                <div style="<?php echo esc_attr($style)?>">
                 <?php echo __('Your payment is successful with HitPay.', $this->domain) ?>
                     <img style="width:100px" src="<?php echo HITPAY_PLUGIN_URL?>assets/images/check.png"  />
                 </div>
             </div>
 
-             <div class="payment-panel-failed" style="<?php echo ($status == 'failed' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
+             <div class="payment-panel-failed" style="<?php echo ($status === 'failed' ? 'display: block':'display: none')?>">
+                <div style="<?php echo esc_attr($style)?>">
                 <?php echo __('Your payment is failed with HitPay.', $this->domain) ?>
                 </div>
             </div>
 
-             <div class="payment-panel-cancelled" style="<?php echo ($status == 'cancelled' ? 'display: block':'display: none')?>">
-                <div style="<?php echo $style?>">
+             <div class="payment-panel-cancelled" style="<?php echo ($status === 'cancelled' ? 'display: block':'display: none')?>">
+                <div style="<?php echo esc_attr($style)?>">
                 <?php 
                 if (isset($status_message) && !empty($status_message)) {
                     echo $status_message;
@@ -989,7 +1004,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
         try {
             $order_id = (int)sanitize_text_field($_GET['order_id']);
-            if ($order_id == 0) {
+            if ($order_id === 0) {
                 throw new \Exception( __('Order not found.', $this->domain));
             }
 			
@@ -1026,9 +1041,9 @@ class WC_HitPay extends WC_Payment_Gateway {
             $status = sanitize_text_field($_GET['status']);
             $reference = sanitize_text_field($_GET['reference']);
 
-            if ($status == 'canceled') {
+            if ($status === 'canceled') {
                 $status = $order->get_status();
-                if ($status == 'processing' || $status == 'completed') {
+                if ($status === 'processing' || $status === 'completed') {
                     $status = 'completed';
                 } else {
                     $status_message = __('Order cancelled by HitPay.', $this->domain).($reference ? ' Reference: '.$reference:'');
@@ -1041,7 +1056,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                 }
             }
 
-            if ($status == 'completed') {
+            if ($status === 'completed') {
                 wp_redirect(add_query_arg( 'status', $status, $this->get_return_url( $order )));exit;
             }
         }
@@ -1049,9 +1064,10 @@ class WC_HitPay extends WC_Payment_Gateway {
 
     public function web_hook_handler() {
         global $woocommerce;
-        $this->log('Webhook Triggers');
-        $this->log('Post Data:');
-        $this->log($_POST);
+        $this->log('Webhook Triggered');
+		$this->log('Payment_id: '.sanitize_text_field($_POST['payment_id']));
+        $this->log('Payment_status: '.sanitize_text_field($_POST['status']));
+		$this->log('Payment_reference_number: '.sanitize_text_field($_POST['reference_number']));
 
         if (!isset($_GET['hitpay_order_id']) || !isset($_POST['hmac'])) {
             $this->log('order_id + hmac check failed');
@@ -1064,7 +1080,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
         if ($order_id > 0) {
             $HitPay_webhook_triggered = (int)$this->getOrderMetaData($order, $order_id, 'HitPay_webhook_triggered', true);
-            if ($HitPay_webhook_triggered == 1) {
+            if ($HitPay_webhook_triggered === 1) {
                 exit;
             }
         }
@@ -1079,7 +1095,7 @@ class WC_HitPay extends WC_Payment_Gateway {
             unset($data['hmac']);
 
             $salt = $this->salt;
-            if (Client::generateSignatureArray($salt, $data) == $_POST['hmac']) {
+            if (Client::generateSignatureArray($salt, $data) === $_POST['hmac']) {
                 $this->log('hmac check passed');
 
                 $HitPay_payment_id = $this->getOrderMetaData($order, $order_id, 'HitPay_payment_id', true );
@@ -1093,10 +1109,9 @@ class WC_HitPay extends WC_Payment_Gateway {
                 if (!$HitPay_is_paid) {
                     $status = sanitize_text_field($_POST['status']);
 
-                    if ($status == 'completed'
-                        && $order_total = $order->get_total() == $_POST['amount']
-                        //&& $order_id == $_POST['reference_number']
-                        && $order_data['currency'] == $_POST['currency']
+                    if ($status === 'completed'
+                        && $order->get_total() === $_POST['amount']
+                        && $order_data['currency'] === $_POST['currency']
                     ) {
                         $payment_id = sanitize_text_field($_POST['payment_id']);
                         $payment_request_id = sanitize_text_field($_POST['payment_request_id']);
@@ -1122,7 +1137,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                         $order->save_meta_data();
 
                         $woocommerce->cart->empty_cart();
-                    } elseif ($status == 'failed') {
+                    } elseif ($status === 'failed') {
                         $payment_id = sanitize_text_field($_POST['payment_id']);
                         $hitpay_currency = sanitize_text_field($_POST['currency']);
                         $hitpay_amount = sanitize_text_field($_POST['amount']);
@@ -1137,7 +1152,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                         $order->save_meta_data();
 
                         $woocommerce->cart->empty_cart();
-                    } elseif ($status == 'pending') {
+                    } elseif ($status === 'pending') {
                         $payment_id = sanitize_text_field($_POST['payment_id']);
                         $hitpay_currency = sanitize_text_field($_POST['currency']);
                         $hitpay_amount = sanitize_text_field($_POST['amount']);
@@ -1191,7 +1206,7 @@ class WC_HitPay extends WC_Payment_Gateway {
         try {
             $HitPay_transaction_id = $this->getOrderMetaData($order, $orderId, 'HitPay_transaction_id', true );
             $HitPay_is_refunded = $this->getOrderMetaData($order, $orderId, 'HitPay_is_refunded', true );
-            if ($HitPay_is_refunded == 1) {
+            if ($HitPay_is_refunded === 1) {
                 throw new Exception(__('Only one refund allowed per transaction by HitPay Gateway.',  $this->domain));
             }
 
@@ -1250,7 +1265,7 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function getMode()
     {
         $mode = true;
-        if ($this->mode == 'no') {
+        if ($this->mode === 'no') {
             $mode = false;
         }
         return $mode;
@@ -1276,7 +1291,6 @@ class WC_HitPay extends WC_Payment_Gateway {
                 $this->getMode()
             );
 
-            //$redirect_url = $this->get_return_url( $order );
             $redirect_url = site_url().'/?wc-api=wc_hitpay&hitpayreturn=1&hitpay_order_id='.$order_id;
             $webhook = site_url().'/?wc-api=wc_hitpay&hitpay_order_id='.$order_id;
 
@@ -1301,20 +1315,23 @@ class WC_HitPay extends WC_Payment_Gateway {
             }
 
             if ($this->enable_pos && count($this->terminal_ids) > 0) {
-                if (isset($_POST['hitpay_payment_option']) && ($_POST['hitpay_payment_option'] != 'onlinepayment')) {
+                if (isset($_POST['hitpay_payment_option']) && ($_POST['hitpay_payment_option'] !== 'onlinepayment')) {
                     $terminal_id = sanitize_text_field($_POST['hitpay_payment_option']);
                     $create_payment_request->setPaymentMethod('wifi_card_reader');
                     $create_payment_request->setWifiTerminalId($terminal_id);
                 }
             }
 
-            $this->log('Request:');
-            $this->log((array)$create_payment_request);
+            $this->log('Create Payment Request:');
+			$this->log('Payment_request_amount: '.$create_payment_request->getAmount());
+			$this->log('Payment_request_currency: '.$create_payment_request->getCurrency());
+			$this->log('Payment_request reference_number: '.$create_payment_request->getReferenceNumber());
 
             $result = $hitpay_client->createPayment($create_payment_request);
 
-            $this->log('Response:');
-            $this->log((array)$result);
+            $this->log('Create Payment Response:');
+			$this->log('Create Payment_Request_id: '.$result->getId());
+			$this->log('Create Payment_status: '.$result->getStatus());
 
             $order->delete_meta_data('HitPay_payment_id');
             $order->add_meta_data('HitPay_payment_id', $result->getId());
@@ -1322,11 +1339,11 @@ class WC_HitPay extends WC_Payment_Gateway {
             $order->save_meta_data();
 
             $hitpayDomain = 'sandbox.hit-pay.com';
-            if ($this->mode == 'yes') {
+            if ($this->mode === 'yes') {
                 $hitpayDomain = 'hit-pay.com';
             }
 
-            if ($result->getStatus() == 'pending') {
+            if ($result->getStatus() === 'pending') {
                 return array(
                     'result' => 'success',
                     'redirect' => $result->getUrl(),
@@ -1339,6 +1356,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                 throw new Exception(sprintf(__('HitPay: sent status is %s', $this->domain), $result->getStatus()));
              }
         } catch (\Exception $e) {
+			$this->log('Create Payment Failed:');
             $log_message = $e->getMessage();
             $this->log($log_message);
 
@@ -1440,8 +1458,21 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function log($content)
     {
         $debug = $this->debug;
-        if ($debug == 'yes') {
-            $file = HITPAY_PLUGIN_PATH.'debug.log';
+        if ($debug === 'yes') {
+			if (!$this->option_exists("woocommerce_hitpay_logfile_prefix")) {
+				$logfile_prefix = md5(uniqid(rand(), true));
+				update_option('woocommerce_hitpay_logfile_prefix', $logfile_prefix);
+			} else {
+				$logfile_prefix = get_option('woocommerce_hitpay_logfile_prefix');
+				if (empty($logfile_prefix)) {
+					$logfile_prefix = md5(uniqid(rand(), true));
+					update_option('woocommerce_hitpay_logfile_prefix', $logfile_prefix);
+				}
+			}
+			
+			$filename = $logfile_prefix.'_debug_.log';
+
+            $file = HITPAY_PLUGIN_PATH.$filename;
             try {
                 $fp = fopen($file, 'a+');
                 if ($fp) {

@@ -102,7 +102,7 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
     
     private function isDropInEnabled() {
         $status = false;
-        if ($this->gateway->drop_in == 'yes') {
+        if ($this->gateway->drop_in === 'yes') {
             $status = true;
         } 
         return $status;
