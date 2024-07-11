@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 4.1.3
+Version: 4.1.4
 Requires at least: 4.0
-Tested up to: 6.4.3
+Tested up to: 6.5.5
 WC requires at least: 2.4
-WC tested up to: 8.7.0
+WC tested up to: 9.0.2
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-define('HITPAY_VERSION', '4.1.3');
+define('HITPAY_VERSION', '4.1.4');
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -87,14 +87,14 @@ function woocommerce_hitpay_blocks_support() {
 add_filter('woocommerce_order_button_html', 'custom_order_button_html', 10, 5 );
 function custom_order_button_html( $order_button_html ) {
     $chosen_payment_method = WC()->session->get('chosen_payment_method');
-    if( $chosen_payment_method == 'hitpay'){
+    if( $chosen_payment_method === 'hitpay'){
 		$payment_button = get_option('woocommerce_hitpay_payment_button');
 		if($payment_button) {
 			$place_order_text = get_option('woocommerce_hitpay_place_order_text');
 			if (empty($place_order_text)) {
 				$place_order_text = 'Complete Payment';
 			}
-			$order_button_html = '<button type="submit" class="hitpay-own-payment-button button alt wp-element-button" name="woocommerce_checkout_place_order" id="place_order" value="'.$place_order_text.'" data-value="'.$place_order_text.'">'.$place_order_text.'</button>';
+			$order_button_html = '<button type="submit" class="hitpay-own-payment-button button alt wp-element-button" name="woocommerce_checkout_place_order" id="place_order" value="'.esc_attr($place_order_text).'" data-value="'.esc_attr($place_order_text).'">'.esc_attr($place_order_text).'</button>';
 		}
     }
 	
