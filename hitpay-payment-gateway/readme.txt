@@ -1,6 +1,6 @@
 === HitPay Payment Gateway for WooCommerce ===
 Contributors: HitPay
-Tags: hitpay payments, woocommerce, payment gateway, hitpay, pay with hitpay, credit card, paynow, wechatpay, alipay
+Tags: hitpay, payment gateway, woocommerce, QR code
 Requires at least: 4.0
 Tested up to: 6.5.5
 Stable tag: 4.1.4
@@ -88,9 +88,10 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 == Changelog ==
 
 = 4.1.4 =
-* Jul 11, 2024
+* Jul 15, 2024
 * Applied various security fixes
 * Fixed Hitpay Fee Currency Issue
+* Applied Plugin Check Recemmendations
 * Plugin tested on WooCommerce 9.0.2
 * Plugin tested on WordPress 6.5.5
 

@@ -89,7 +89,7 @@ function custom_order_button_html( $order_button_html ) {
     $chosen_payment_method = WC()->session->get('chosen_payment_method');
     if( $chosen_payment_method === 'hitpay'){
 		$payment_button = get_option('woocommerce_hitpay_payment_button');
-		if($payment_button) {
+		if($payment_button == 1) {
 			$place_order_text = get_option('woocommerce_hitpay_place_order_text');
 			if (empty($place_order_text)) {
 				$place_order_text = 'Complete Payment';
