@@ -87,11 +87,16 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 == Changelog ==
 
+= 4.1.5 =
+* Jul 15, 2024
+* Applied Plugin Check Recemmendations
+* Plugin tested on WooCommerce 9.0.2
+* Plugin tested on WordPress 6.5.5
+
 = 4.1.4 =
 * Jul 15, 2024
 * Applied various security fixes
 * Fixed Hitpay Fee Currency Issue
-* Applied Plugin Check Recemmendations
 * Plugin tested on WooCommerce 9.0.2
 * Plugin tested on WordPress 6.5.5
 
