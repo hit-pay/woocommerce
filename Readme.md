@@ -5,7 +5,7 @@ Contributors: HitPay
 Tags: hitpay, payment gateway, woocommerce, QR code
 Requires at least: 4.0
 Tested up to: 6.6
-Stable tag: 4.1.4
+Stable tag: 4.1.6
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 9.1.2
@@ -117,11 +117,16 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 
 == Changelog ==
 
-= 4.1.5 =
+= 4.1.6 =
 * Jul 23, 2024
-* Fixed equal operator issue on webhook
 * Plugin tested on WooCommerce 9.1.2
 * Plugin tested on WordPress 6.6
+
+= 4.1.5 =
+* Jul 18, 2024
+* Fixed equal operator issue on webhook
+* Plugin tested on WooCommerce 9.0.2
+* Plugin tested on WordPress 6.5.5
 
 = 4.1.4 =
 * Jul 15, 2024
