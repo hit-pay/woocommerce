@@ -95,6 +95,7 @@ function showHitpayCustomLayer() {
 }
 function hideHitpayCustomLayer() {
     jQuery('#hitpay_background_layer').hide();
+    jQuery("form.checkout").removeClass("processing").unblock(); /*Phlox Shop Compatible*/
 }
 
 function onHitpayBlockDropInSuccess (data) {
