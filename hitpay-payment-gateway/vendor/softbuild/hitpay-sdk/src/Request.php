@@ -127,7 +127,7 @@ class Request
         } elseif ($httpCode != 200 && $httpCode != 201) {
             $message = isset($this->errors[$httpCode])
                 ? $this->errors[$httpCode]
-                : 'Error message does not exists.';
+                : $httpCode. ': Failed to connect to HitPay Gateway Server, please contact us with your site server IP address.';
             throw new \Exception($message, $httpCode);
         }
     }
