@@ -110,7 +110,7 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
     
     private function isPosEnabled() {
         $status = false;
-        if ($this->gateway->enable_pos) {
+        if ($this->gateway->enable_pos == 1) {
             $status = true;
         } 
         return $status;
@@ -118,7 +118,7 @@ final class WC_Hitpay_Blocks_Support extends AbstractPaymentMethodType {
 	
 	private function getPlaceOrderText() {
         $text = '';
-        if ($this->gateway->payment_button) {
+        if ($this->gateway->payment_button == 1) {
             $text = $this->gateway->place_order_text;
         } 
         return $text;
