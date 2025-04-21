@@ -128,6 +128,18 @@ class WC_HitPay extends WC_Payment_Gateway {
         add_action('wp_enqueue_scripts',  array( $this, 'hitpay_load_front_assets') );
     }
 
+    public function getHostName()
+    {
+        $domainIp = site_url();
+        $url = parse_url($domainIp);
+        if (isset($url['host'])) {
+            $domainIp = gethostbyname($url['host']);
+        } else {
+            $domainIp = 'IP Not Found';
+        }
+        return $domainIp;
+    }
+
     public function testConnection()
     {
         if (isset($_GET['hitpaytestnonce']) && !wp_verify_nonce(sanitize_key($_GET['hitpaytestnonce']), 'hitpay-settings')) {
@@ -147,10 +159,21 @@ class WC_HitPay extends WC_Payment_Gateway {
                 }
 
                 $response = array();
+                $response['my_ip_address'] = $this->getHostName();
 
                 try {
                     if (empty($api_key)) {
-                        throw new Exception('Enter your API Key');
+                        $response['request_sent'] = '<p>Request not sent yet, initial check failed.</p>';
+                        $response['response_from_hitpay'] = '<p>N/A</p>';
+                        
+                        throw new Exception('Enter your API key.');
+                    }
+
+                    if (!extension_loaded('curl')) {
+                        $response['request_sent'] = '<p>Request not sent yet, initial check failed.</p>';
+                        $response['response_from_hitpay'] = '<p>N/A</p>';
+
+                        throw new Exception('CURL extension is not enabled on your server.');
                     }
 
                     $hitpay_client = new Client(
@@ -162,14 +185,28 @@ class WC_HitPay extends WC_Payment_Gateway {
                     $create_payment_request->setAmount(10)
                         ->setCurrency(get_woocommerce_currency())
                         ->setReferenceNumber('Test Connection - '.HITPAY_VERSION);
+
+                    $payload = array (
+                        'amount' => $create_payment_request->getAmount(),
+                        'currency' => $create_payment_request->getCurrency(),
+                        'reference_number' => $create_payment_request->getReferenceNumber()
+                    );
+
+                    $result = $hitpay_client->createPaymentTest($create_payment_request);
         
-                    $result = $hitpay_client->createPayment($create_payment_request);
-        
-                    if ($result->getStatus()) {
+                    if ($result['status'] == 'success') {
                         $response['status'] = 'success';
                         $response['message'] = 'Your store connection with HitPay is successful.';
                     } else {
-                        throw new Exception(sprintf('HitPay: sent status is %s', $result->getStatus()));
+                        $response['status'] = 'error';
+                        $response['message'] = $result['httpCode']. ': Failed to connect to HitPay Gateway Server.';
+                        $response['response_from_hitpay'] = '<p>'.$result['content'].'</p>';
+                        $request_sent = '<p><strong>End Point: </strong>'.$result['endpoint'].'</p>';
+                        // @codingStandardsIgnoreStart
+                        $request_sent .= '<p><strong>Headers: </strong>'.print_r($result['headers'], true).'</p>';
+                        $request_sent .= '<p><strong>Pay Load: </strong>'.print_r($payload, true).'</p>';
+                        // @codingStandardsIgnoreEnd
+                        $response['request_sent'] = $request_sent;
                     }
 
                 } catch (\Exception $e) {
@@ -581,6 +618,8 @@ class WC_HitPay extends WC_Payment_Gateway {
     }
 
     public function hitpay_admin_footer() {
+        wp_enqueue_script( 'jquery-ui-dialog' );
+        wp_enqueue_style( 'wp-jquery-ui-dialog' );
         $this->expires_after_status = $this->get_option('expires_after_status');
         $this->expires_after = $this->get_option('expires_after');
 
@@ -782,12 +821,74 @@ class WC_HitPay extends WC_Payment_Gateway {
                 border-radius: 3px;
                 display: none;
             "></span>
+            <button style="margin-left:15px; display: none" name="test_connection_details" id="test_connection_details" class="woocommerce-save-button components-button is-primary" type="button" value="Test Connection">View Details</button>
+            <div id="test_connection_details_popup">
+                
+            </div>                   
         </div>
+
+        <div id="test_connection-dialog" class="hidden" style="max-width:800px; float:left">
+            <h3>Request Sent</h3>
+            <div id="request_sent"></div>
+            <h3>Response From HitPay</h3>
+            <div id="response_from_hitpay"></div>
+            <h3>My IP Address</h3>
+            <div id="my_ip_address"></div>
+        </div>
+
+<style>
+.test_connection-dialog .ui-widget-header{
+    border: none !important;
+}
+.test_connection-dialog .ui-dialog-titlebar {
+    border-bottom: 1px solid #dcdcde !important;
+}
+.test_connection-dialog .ui-dialog-titlebar-close .ui-icon-closethick {
+    display: none  !important;
+}
+.test_connection-dialog .ui-dialog .ui-dialog-content {
+    float: left !important;
+}
+</style>
 
         <script type="text/javascript">
             var hitpaytab = '<?php echo esc_attr($hitpaytab)?>';
             var testConnectionAjaxUrl = "?page=wc-settings&section=hitpay&tab=checkout&hitpaytab=testconnection&hitpaytestnonce=<?php echo esc_html($hitpaynonce)?>";
             jQuery(document).ready(function(){
+
+                jQuery('#test_connection-dialog').dialog({
+                    title: 'Test Connection Details',
+                    dialogClass: 'wp-dialog test_connection-dialog',
+                    autoOpen: false,
+                    draggable: false,
+                    width: 'auto',
+                    modal: true,
+                    resizable: false,
+                    closeOnEscape: true,
+                    position: {
+                    my: "center",
+                    at: "center",
+                    of: window
+                    },
+                    open: function () {
+                        jQuery('.ui-widget-overlay').bind('click', function(){
+                            jQuery('#test_connection-dialog').dialog('close');
+                        })
+                    },
+                    create: function () {
+                        jQuery('.ui-dialog-titlebar-close').addClass('ui-button');
+                        jQuery('.ui-dialog-titlebar-close').html('');
+                    },
+                    close: function () {
+                        jQuery('#test_connection_details').removeClass('is-busy');
+                    },
+                });
+
+                jQuery('#test_connection_details').click(function(e) {
+                    e.preventDefault();
+                    jQuery('#test_connection-dialog').dialog('open');
+                });
+
                 var maxField = 30;
                 var addButton = jQuery('.add_button');
                 var wrapper = jQuery('.field_wrapper');
@@ -801,6 +902,7 @@ class WC_HitPay extends WC_Payment_Gateway {
                 jQuery('p.submit button').after(jQuery('#test_connection'));
                 jQuery('#test_connection').after(jQuery('#test_connection_success'));
                 jQuery('#test_connection').after(jQuery('#test_connection_error'));
+                jQuery('#test_connection_success').after(jQuery('#test_connection_details'));
 
                 if (hitpaytab == 'settings') {
                     jQuery('#woocommerce_hitpay_enabled').closest('.form-table').show();
@@ -870,6 +972,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
                     jQuery('#test_connection_success').hide();
                     jQuery('#test_connection_error').hide();
+                    jQuery('#test_connection_details').hide();
 
                     var mode = 'sandbox';
                     if (jQuery('#woocommerce_hitpay_mode').is(':checked')) {
@@ -888,8 +991,13 @@ class WC_HitPay extends WC_Payment_Gateway {
                                 jQuery('#test_connection_success').show();
                                 jQuery('#test_connection_success').html(output.message);
                             } else {
+                                jQuery('#test_connection_details').show();
                                 jQuery('#test_connection_error').show();
                                 jQuery('#test_connection_error').html(output.message);
+
+                                jQuery('#request_sent').html(output.request_sent);
+                                jQuery('#response_from_hitpay').html(output.response_from_hitpay);
+                                jQuery('#my_ip_address').html(output.my_ip_address);
                             }
                             jQuery('#test_connection').html('Test Connection');
                             jQuery('#test_connection').prop('disabled', false);

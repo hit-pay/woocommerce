@@ -40,6 +40,14 @@ class Client extends Request
         return new CreatePaymentResponse($result);
     }
 
+    public function createPaymentTest(CreatePayment $request)
+    {
+        $requestArray = (array)$request;
+        $result = $this->requestTest('POST', '/payment-requests', $requestArray);
+
+        return $result;
+    }
+
     /**
      * https://staging.hit-pay.com/docs.html?shell#get-payment-status
      *

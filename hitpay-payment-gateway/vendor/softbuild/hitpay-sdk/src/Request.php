@@ -103,6 +103,41 @@ class Request
         return $result;
     }
 
+    protected function requestTest($type, $path, $request = array())
+    {
+        $endpoint = $this->isLive ? static::API_ENDPOINT : static::SANDBOX_API_ENDPOINT;
+
+        curl_setopt($this->ch, CURLOPT_URL, $endpoint . $path);
+        curl_setopt($this->ch, CURLOPT_HEADER, true);
+        curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false); 
+        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $type);
+
+        if (!empty($request)) {
+            $request = http_build_query($request);
+            curl_setopt($this->ch, CURLOPT_POSTFIELDS, $request);
+        }
+        curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->getHeaders());
+
+        $result = curl_exec($this->ch);
+
+        $httpCode = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
+
+        $response = array();
+
+        if ($httpCode == 200 || $httpCode == 201) {
+            $response['status'] = 'success';
+        } else {
+            $response['status'] = 'error';
+            $response['content'] = $result;
+            $response['httpCode'] = $httpCode;
+            $response['endpoint'] = $endpoint;
+            $response['headers'] = $this->getHeaders();
+        }
+
+        return $response;
+    }
+
     /**
      * @param null $response
      * @return void
