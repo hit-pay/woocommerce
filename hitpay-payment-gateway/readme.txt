@@ -2,8 +2,8 @@
 Contributors: HitPay
 Tags: hitpay, payment gateway, woocommerce, QR code
 Requires at least: 4.0
-Tested up to: 6.7.2
-Stable tag: 4.1.8
+Tested up to: 6.8
+Stable tag: 4.1.9
 Requires PHP: 5.5
 WC requires at least: 2.4
 WC tested up to: 9.8.1
@@ -86,6 +86,13 @@ The easiest and fastest way is via our live chat on our [website](https://www.hi
 2. Normal checkout with HitPay Payment Gateway.
 
 == Changelog ==
+
+= 4.1.9 =
+* Apr 21, 2025
+* Added Test Connection View Error Details button
+* Applied Plugin Check (PCP) Recemmendations for the latest version 1.4.0
+* Plugin tested on WooCommerce 9.8.1
+* Plugin tested on WordPress 6.8
 
 = 4.1.8 =
 * Apr 11, 2025
