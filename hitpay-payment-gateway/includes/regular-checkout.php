@@ -895,7 +895,12 @@ class WC_HitPay extends WC_Payment_Gateway {
                 var fieldHTML = '<table class="dynamic-field-table" style="border-bottom: 1px solid #ccc; margin-bottom: 10px"><tr valign="top"><th scope="row" class="titledesc"><label for="woocommerce_hitpay_enable_pos">Terminal Reader ID</label></th><td class="forminp"><input type="text" name="woocommerce_hitpay_terminal_ids[]" value=""/></td><td><a href="javascript:void(0);" class="btn button-secondary remove_button" title="Remove field">Remove</a></td></tr><tr valign="top"><th scope="row" class="titledesc"><label for="woocommerce_hitpay_enable_pos">Cashier E-mail (Optional)</label></th><td class="forminp"><input type="text" name="woocommerce_hitpay_cashier_emails[]" value=""/></td></tr></table>';
                 var x = parseInt('<?php echo (count($this->terminal_ids) == 0) ? 1 : count($this->terminal_ids)?>');
 
-                jQuery('.wc-admin-breadcrumb').parent().after(jQuery('#hitpay-tabs'));
+				if (jQuery('.wc-admin-breadcrumb').length > 0) {
+					jQuery('.wc-admin-breadcrumb').parent().after(jQuery('#hitpay-tabs'));
+				} else if (jQuery('.wc-admin-header').length > 0) {
+					jQuery('.wc-admin-header').after(jQuery('#hitpay-tabs'));
+				}
+				
                 jQuery('#hitpay-tabs').after(jQuery('#hitpay-tab-content-customize'));
                 jQuery('#hitpay-tab-content-customize').after(jQuery('#hitpay-tab-content-pos-settings'));
                 jQuery('#hitpay-tabs').show();
