@@ -473,7 +473,10 @@ class WC_HitPay extends WC_Payment_Gateway {
                 'type' => 'checkbox',
                 'label' => __('Enable Drop-In (Popup)', 'hitpay-payment-gateway'),
                 'default' => 'no',
-                'description'=> __( 'The drop-in is embedded into your webpage so your customer will never have to leave your site.', 'hitpay-payment-gateway').' <br/>'.__('Redirect: Navigate your user to the hitpay checkout url, and hitpay will take care of the rest of the flow', 'hitpay-payment-gateway'),
+                'description'=> 
+				'<span style="color:red; font-weight:bold">'.__( '(Drop-In is Recommended for Singapore PayNow Only)', 'hitpay-payment-gateway').'</span><br/>'.
+				__( 'The drop-in is embedded into your webpage so your customer will never have to leave your site.', 'hitpay-payment-gateway').' <br/>'.
+				__('Redirect: Navigate your user to the hitpay checkout url, and hitpay will take care of the rest of the flow', 'hitpay-payment-gateway'),
             ),
             'payments' => array(
                 'title' => __('Payment Logos', 'hitpay-payment-gateway'),
@@ -1342,7 +1345,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 					
 					$hitpaynonce = wp_create_nonce( 'hitpay-payment-fields' );
 
-                    wp_redirect( 
+                    wp_safe_redirect( 
 						add_query_arg(
 							array(
 								'cancelled'=>'true',
@@ -1357,7 +1360,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
             if ($status == 'completed') {
 				$hitpaynonce = wp_create_nonce('hitpay-thankyou-page');
-                wp_redirect(
+                wp_safe_redirect(
 					add_query_arg(
 						array(
 							'status' => $status,

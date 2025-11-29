@@ -2,11 +2,11 @@
 /*
 Plugin Name: HitPay Payment Gateway for WooCommerce
 Description: HitPay Payment Gateway Plugin allows HitPay merchants to accept PayNow QR, Cards, Apple Pay, Google Pay, WeChatPay, AliPay and GrabPay Payments. You will need a HitPay account, contact support@hitpay.zendesk.com.
-Version: 4.2.0
+Version: 4.2.1
 Requires at least: 4.0
-Tested up to: 6.8.2
+Tested up to: 6.9
 WC requires at least: 2.4
-WC tested up to: 10.0.2
+WC tested up to: 10.3.5
 Requires PHP: 5.5
 Author: <a href="https://www.hitpayapp.com>HitPay Payment Solutions Pte Ltd</a>   
 Author URI: https://www.hitpayapp.com
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-define('HITPAY_VERSION', '4.2.0');
+define('HITPAY_VERSION', '4.2.1');
 define('HITPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('HITPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
 
@@ -49,14 +49,14 @@ function woocommerce_hitpay_init() {
     require_once HITPAY_PLUGIN_PATH. 'includes/regular-checkout.php';
 }
 
-add_filter('woocommerce_payment_gateways', 'add_hitpay_gateway_class');
-function add_hitpay_gateway_class($methods) {
+add_filter('woocommerce_payment_gateways', 'hitpay_add_gateway_class');
+function hitpay_add_gateway_class($methods) {
     $methods[] = 'WC_Hitpay';
     return $methods;
 }
 
-add_filter( 'woocommerce_available_payment_gateways', 'enable_hitpay_gateway' );
-function enable_hitpay_gateway( $available_gateways ) {
+add_filter( 'woocommerce_available_payment_gateways', 'hitpay_enable_gateway' );
+function hitpay_enable_gateway( $available_gateways ) {
     if ( is_admin() ) return $available_gateways;
 
     if ( isset( $available_gateways['hitpay'] )) {
@@ -84,8 +84,8 @@ function woocommerce_hitpay_blocks_support() {
     }
 }
 
-add_filter('woocommerce_order_button_html', 'custom_order_button_html', 10, 5 );
-function custom_order_button_html( $order_button_html ) {
+add_filter('woocommerce_order_button_html', 'hitpay_custom_order_button_html', 10, 5 );
+function hitpay_custom_order_button_html( $order_button_html ) {
     $chosen_payment_method = WC()->session->get('chosen_payment_method');
     if( $chosen_payment_method == 'hitpay'){
 		$payment_button = get_option('woocommerce_hitpay_payment_button');
