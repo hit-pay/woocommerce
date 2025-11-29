@@ -1345,7 +1345,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 					
 					$hitpaynonce = wp_create_nonce( 'hitpay-payment-fields' );
 
-                    wp_redirect( 
+                    wp_safe_redirect( 
 						add_query_arg(
 							array(
 								'cancelled'=>'true',
@@ -1360,7 +1360,7 @@ class WC_HitPay extends WC_Payment_Gateway {
 
             if ($status == 'completed') {
 				$hitpaynonce = wp_create_nonce('hitpay-thankyou-page');
-                wp_redirect(
+                wp_safe_redirect(
 					add_query_arg(
 						array(
 							'status' => $status,
