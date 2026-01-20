@@ -1,0 +1,37 @@
+name: Deploy to WordPress.org
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  deploy:
+    name: Deploy to WordPress.org SVN
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on master branch
+        run: |
+          # Get the commit SHA of the tag
+          TAG_COMMIT=$(git rev-parse HEAD)
+
+          # Check if this commit exists on master
+          if git branch -r --contains "$TAG_COMMIT" | grep -q "origin/master"; then
+            echo "Tag is on master branch. Proceeding with deployment."
+          else
+            echo "Error: Tag must be created from the master branch."
+            exit 1
+          fi
+
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: hitpay-payment-gateway
+          BUILD_DIR: hitpay-payment-gateway
