@@ -46,12 +46,6 @@ class Request
      */
     public function __construct($privateApiKey, $live = false)
     {
-        if (!extension_loaded('curl')) {
-            $this->ch = curl_init2();
-        } else {
-            $this->ch = curl_init();
-        }
-
         $this->privateApiKey = $privateApiKey;
         $this->isLive = $live;
     }
@@ -63,79 +57,69 @@ class Request
      * @return bool
      * @throws \Exception
      */
-    protected function request($type, $path, $request = array())
+    protected function request($type, $path, $data = array())
     {
         $endpoint = $this->isLive ? static::API_ENDPOINT : static::SANDBOX_API_ENDPOINT;
-        if (!extension_loaded('curl')) {
-            curl_setopt2($this->ch, CURLOPT_URL2, $endpoint . $path);
-            curl_setopt2($this->ch, CURLOPT_HEADER2, false);
-            curl_setopt2($this->ch, CURLOPT_SSL_VERIFYPEER2, false); 
-            curl_setopt2($this->ch, CURLOPT_RETURNTRANSFER2, true);
-            curl_setopt2($this->ch, CURLOPT_CUSTOMREQUEST2, $type);
-
-            if (!empty($request)) {
-                $request = http_build_query($request);
-                curl_setopt2($this->ch, CURLOPT_POSTFIELDS2, $request);
-            }
-
-            curl_setopt2($this->ch, CURLOPT_HTTPHEADER2, $this->getHeaders());
-
-            $result = curl_exec2($this->ch);
-        } else {
-            curl_setopt($this->ch, CURLOPT_URL, $endpoint . $path);
-            curl_setopt($this->ch, CURLOPT_HEADER, false);
-            curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false); 
-            curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $type);
-
-            if (!empty($request)) {
-                $request = http_build_query($request);
-                curl_setopt($this->ch, CURLOPT_POSTFIELDS, $request);
-            }
-            curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->getHeaders());
-
-            $result = curl_exec($this->ch);
-        }
-        $result = !empty($result) ? json_decode($result) : null;
-
-        $this->checkError($result);
-
-        return $result;
+		
+		$url = $endpoint . $path;
+		
+		$args = [
+			'method' => $type,
+			'headers' => $this->getHeaders(),
+			'timeout' => 60
+		];
+		
+		if (!empty($data)) {
+			$data = http_build_query($data);
+			$args['body'] = $data;
+		}
+		
+		$response = wp_remote_request($url, $args);
+				
+		$body = wp_remote_retrieve_body( $response );
+		$result = json_decode( $body );
+		
+		$this->checkError($response, $result);
+		
+		return $result;
     }
 
-    protected function requestTest($type, $path, $request = array())
+    protected function requestTest($type, $path, $data = array())
     {
         $endpoint = $this->isLive ? static::API_ENDPOINT : static::SANDBOX_API_ENDPOINT;
+		
+		$url = $endpoint . $path;
+		
+		$args = [
+			'method' => $type,
+			'headers' => $this->getHeaders(),
+			'timeout' => 60
+		];
+		
+		if (!empty($data)) {
+			$data = http_build_query($data);
+			$args['body'] = $data;
+		}
+		
+		$response = wp_remote_request($url, $args);
 
-        curl_setopt($this->ch, CURLOPT_URL, $endpoint . $path);
-        curl_setopt($this->ch, CURLOPT_HEADER, true);
-        curl_setopt($this->ch, CURLOPT_SSL_VERIFYPEER, false); 
-        curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, $type);
+        $httpCode = wp_remote_retrieve_response_code($response);
 
-        if (!empty($request)) {
-            $request = http_build_query($request);
-            curl_setopt($this->ch, CURLOPT_POSTFIELDS, $request);
-        }
-        curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->getHeaders());
-
-        $result = curl_exec($this->ch);
-
-        $httpCode = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-
-        $response = array();
+        $result = array();
 
         if ($httpCode == 200 || $httpCode == 201) {
-            $response['status'] = 'success';
+            $result['status'] = 'success';
         } else {
-            $response['status'] = 'error';
-            $response['content'] = $result;
-            $response['httpCode'] = $httpCode;
-            $response['endpoint'] = $endpoint;
-            $response['headers'] = $this->getHeaders();
+			$message = $this->getError($response);
+            $result['status'] = 'error';
+			$result['message'] = $message;
+            $result['content'] = wp_remote_retrieve_body( $response );
+            $result['httpCode'] = $httpCode;
+            $result['endpoint'] = $endpoint;
+            $result['headers'] = $this->getHeaders();
         }
 
-        return $response;
+        return $result;
     }
 
     /**
@@ -143,28 +127,43 @@ class Request
      * @return void
      * @throws \Exception
      */
-    protected function checkError($response = null)
+    protected function checkError($response, $result)
     {
-        if (!extension_loaded('curl')) {
-            $error = curl_error2($this->ch);
-            $httpCode = curl_getinfo2($this->ch, CURLINFO_HTTP_CODE2);
-        } else {
-            $error = curl_error($this->ch);
-            $httpCode = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        }
-        
-        if (!empty($error)) {
-            throw new \Exception($error);
-        } elseif (isset($response->detail)) {
-            throw new \Exception($response->detail);
-        } elseif (isset($response->message)) {
-            throw new \Exception($response->message.'.');
-        } elseif ($httpCode != 200 && $httpCode != 201) {
+		$httpCode = wp_remote_retrieve_response_code($response);
+		
+		if ( is_wp_error( $response ) ) {
+			$error_message = '1: '.$response->get_error_message();
+			throw new \Exception($error_message);
+		} elseif (isset($result->detail)) {
+            throw new \Exception('2: '.$result->detail);
+        } elseif (isset($result->message)) {
+            throw new \Exception('3: '.$result->message);
+		} elseif ($httpCode != 200 && $httpCode != 201) {
             $message = isset($this->errors[$httpCode])
                 ? $this->errors[$httpCode]
                 : $httpCode. ': Failed to connect to HitPay Gateway Server, please contact us with your site server IP address.';
-            throw new \Exception($message, $httpCode);
+            throw new \Exception('4: '.$message, $httpCode);
         }
+    }
+	
+	protected function getError($response)
+    {
+		$httpCode = wp_remote_retrieve_response_code($response);
+		$message = '';
+		if ( is_wp_error( $response ) ) {
+			$message = $response->get_error_message();
+			throw new \Exception($error_message);
+		} elseif (isset($response->detail)) {
+            $message = $response->detail;
+        } elseif (isset($response->message)) {
+            $message = $response->message.'.';
+		} elseif ($httpCode != 200 && $httpCode != 201) {
+            $message = isset($this->errors[$httpCode])
+                ? $this->errors[$httpCode]
+                : $httpCode. ': Failed to connect to HitPay Gateway Server, please contact us with your site server IP address.';
+        }
+		
+		return $message;
     }
 
     /**
@@ -173,21 +172,9 @@ class Request
     protected function getHeaders()
     {
         return [
-            'Content-Type: ' . static::TYPE_CONTENT,
-            'X-BUSINESS-API-KEY: ' . $this->privateApiKey,
-            'X-Requested-With: XMLHttpRequest'
+            'Content-Type' => static::TYPE_CONTENT,
+            'X-BUSINESS-API-KEY' => $this->privateApiKey,
+            'X-Requested-With' => 'XMLHttpRequest'
         ];
-    }
-
-    /**
-     *
-     */
-    public function __destruct()
-    {
-        if (!extension_loaded('curl')) {
-            curl_close2($this->ch);
-        } else {
-            curl_close($this->ch);
-        }
     }
 }

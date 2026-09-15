@@ -131,7 +131,7 @@ class WC_HitPay extends WC_Payment_Gateway {
     public function getHostName()
     {
         $domainIp = site_url();
-        $url = parse_url($domainIp);
+        $url = wp_parse_url($domainIp);
         if (isset($url['host'])) {
             $domainIp = gethostbyname($url['host']);
         } else {
@@ -1411,7 +1411,10 @@ class WC_HitPay extends WC_Payment_Gateway {
         if ($order_id > 0) {
             $HitPay_webhook_triggered = (int)$this->getOrderMetaData($order, $order_id, 'HitPay_webhook_triggered', true);
             if ($HitPay_webhook_triggered == 1) {
-                exit;
+				$status = $order->get_status();
+                if ($status == 'processing' || $status == 'completed') {
+					exit;
+				}
             }
         }
         
